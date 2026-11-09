@@ -153,6 +153,15 @@ Dirección: Cra 45 # 12-30
 Si todo está correcto, envía la palabra *CONFIRMAR* y te lo despachamos lo más pronto posible 🚚
 ```
 
+Resumen del pedido según sus variantes (pedido de Sebastián, 9 nov 2026):
+
+- Cada producto puede tener variantes distintas (tamaño y color, solo color, o ninguna). El resumen se arma leyendo el pedido: si no tiene variante, solo va el nombre; si tiene, va cada variante.
+- Si hay varias unidades con variantes distintas, se listan ordenadas y cortas, por ejemplo: "2 forros de sofá: 1 de 3 puestos gris y 1 de 2 puestos gris".
+- El mensaje no debe quedar largo: solo productos, total, ciudad y dirección.
+- No hace falta una plantilla por producto: una sola plantilla aprobada por Meta con espacios ({{1}}, {{2}}…) sirve para todos, porque el resumen de productos va dentro de un espacio. Ojo: Meta no deja saltos de línea dentro de un espacio, así que los renglones fijos van en la plantilla.
+- La plantilla lleva botones de respuesta rápida ("✅ Confirmar pedido" y "Cambiar datos") para que confirmar sea un solo toque.
+- Cuenta como confirmación cualquier "sí": confirmo, confirmar, sí, si señor, ok, listo, perfecto, dale, de una, 👍, o el botón. Las palabras comunes se reconocen sin IA (gratis); solo si la respuesta es dudosa ("sí pero cámbienme la dirección") la clasifica la IA.
+
 Respuesta cuando la clienta confirma (se envía unos 5 segundos después de su "CONFIRMAR", con el renglón en blanco en medio). La espera de 5 minutos antes de subir a Dropi sigue igual:
 
 ```
