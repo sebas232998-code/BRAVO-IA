@@ -39,10 +39,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "json inválido" }, { status: 400 });
   }
 
-  for (const m of extraerMensajes(aviso)) {
+  const mensajes = extraerMensajes(aviso);
+  console.log("[whatsapp] aviso recibido", { mensajes: mensajes.length });
+  for (const m of mensajes) {
     const c = await configPorNumero(m.phone_number_id);
-    if (!c) continue;
+    if (!c) {
+      console.log("[whatsapp] número sin configurar", m.phone_number_id);
+      continue;
+    }
     if (!firmaMetaValida(cuerpo, req.headers.get("x-hub-signature-256"), c.app_secret)) {
+      console.log("[whatsapp] firma inválida");
       return NextResponse.json({ error: "firma inválida" }, { status: 401 });
     }
 

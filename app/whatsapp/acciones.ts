@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { configWhatsAppDe, guardarConfigWhatsApp } from "@/lib/db";
 import { normalizarTelefono } from "@/lib/telefono";
-import { crearPlantillaEnMeta, enviarMensaje, IDIOMA_PLANTILLA, mensajeHolaMundo, NOMBRE_PLANTILLA } from "@/lib/whatsapp";
+import { suscribirCuentaAApp, crearPlantillaEnMeta, enviarMensaje, IDIOMA_PLANTILLA, mensajeHolaMundo, NOMBRE_PLANTILLA } from "@/lib/whatsapp";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").replace(/\s+/g, "").trim();
 
@@ -33,7 +33,10 @@ export async function guardarWhatsApp(f: FormData) {
     plantilla_confirmacion: texto(f, "plantilla") || antes?.plantilla_confirmacion || NOMBRE_PLANTILLA,
     idioma_plantilla: texto(f, "idioma") || antes?.idioma_plantilla || IDIOMA_PLANTILLA,
   });
-  volver(tienda, "ok", "Datos guardados.");
+  const nueva = await configWhatsAppDe(tienda);
+  const sus = nueva ? await suscribirCuentaAApp(nueva) : null;
+  if (sus && !sus.ok) volver(tienda, "error", `Datos guardados, pero no se pudo activar la recepción de mensajes: ${sus.mensaje}`);
+  volver(tienda, "ok", "Datos guardados y recepción de mensajes activada.");
 }
 
 export async function probarWhatsApp(f: FormData) {

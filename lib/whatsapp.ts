@@ -141,6 +141,12 @@ export function crearPlantillaEnMeta(c: Pick<ConfigWhatsApp, "waba_id" | "access
   return llamarMeta(`${c.waba_id}/message_templates`, c.access_token, plantillaParaMeta());
 }
 
+// Suscribe la cuenta de WhatsApp Business a la app, para que Meta mande los mensajes al webhook.
+export function suscribirCuentaAApp(c: Pick<ConfigWhatsApp, "waba_id" | "access_token">) {
+  if (!c.waba_id) return Promise.resolve({ ok: false, mensaje: "Falta el ID de la cuenta de WhatsApp Business." } as const);
+  return llamarMeta(`${c.waba_id}/subscribed_apps`, c.access_token, {});
+}
+
 // ---------- Mensajes que llegan (webhook) ----------
 
 // Meta firma cada aviso con la clave secreta de la app (encabezado x-hub-signature-256).
