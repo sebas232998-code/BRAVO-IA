@@ -188,7 +188,7 @@ Tono por defecto:
 
 - Cálido, formal y natural, como hablando ("te cuento, mira…"), no de plantilla.
 - Agradecer en vez de exigir; nunca culpar a la clienta.
-- Usar palabras que refuercen que ella desea su producto: "¿deseas confirmar tu pedido?", "si deseas corregir algún dato, puedes editarlo directamente aquí", "tu forro de sofá ya casi va en camino". Preferir "deseas" a "quieres", y no usar respuestas secas como "ah, ok, no hay problema, envíame los datos".
+- Cuando la clienta pide editar datos, responder corto y con "deseas" (no "quieres"): "Ok, no hay ningún problema. Envía los datos que deseas editar directamente aquí." El mensaje de confirmación del pedido no cambia (no se le agrega "¿deseas confirmar?").
 - No decir "te escribimos de {tienda}": el chat ya existe.
 - Sin 🙏 ni 😊; usar 📦, 🛍, 🚚.
 - Pedido en reparto, corto y sin guía: "Hola, ¿cómo estás? Tu paquete ya está en tu ciudad y se encuentra en reparto. Por favor, estar pendiente porque el repartidor puede llegar en cualquier momento."
