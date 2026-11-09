@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   actualizarPedido,
   apartarParaSubir,
@@ -127,4 +128,5 @@ export async function enviarConfirmacionWhatsApp(f: FormData) {
   const r = await enviarYGuardar(c, p.telefono, mensajePlantillaConfirmacion(p, c), mensajeConfirmacion(p), id);
   if (r.ok) await registrarEvento(id, "confirmacion_enviada");
   revalidatePath("/");
+  redirect(r.ok ? `/?ok=${encodeURIComponent(`Confirmación enviada a ${p.nombre_clienta}.`)}` : `/?error=${encodeURIComponent(`WhatsApp: ${r.mensaje}`)}`);
 }

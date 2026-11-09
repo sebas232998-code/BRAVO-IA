@@ -17,7 +17,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function Inicio() {
+export default async function Inicio({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const q = await searchParams;
   const conectada = baseConfigurada();
   const pedidos: Pedido[] = conectada ? await listarPedidos() : PEDIDOS_EJEMPLO;
   const nombres = conectada ? await nombresTiendas() : {};
@@ -43,6 +44,9 @@ export default async function Inicio() {
       <p className="subtitulo">
         Pedidos de tus tiendas · <Link href="/whatsapp" className="enlace">Configurar WhatsApp</Link>
       </p>
+
+      {q.ok && <div className="listo caja">{q.ok}</div>}
+      {q.error && <div className="problema caja">{q.error}</div>}
 
       {!conectada && (
         <div className="aviso">
