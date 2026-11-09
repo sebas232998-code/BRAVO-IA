@@ -159,12 +159,12 @@ Resumen del pedido según sus variantes (pedido de Sebastián, 9 nov 2026):
 - Si hay varias unidades con variantes distintas, se listan ordenadas y cortas, por ejemplo: "2 forros de sofá: 1 de 3 puestos gris y 1 de 2 puestos gris".
 - El mensaje no debe quedar largo: solo productos, total, ciudad y dirección.
 - No hace falta una plantilla por producto: una sola plantilla aprobada por Meta con espacios ({{1}}, {{2}}…) sirve para todos, porque el resumen de productos va dentro de un espacio. Ojo: Meta no deja saltos de línea dentro de un espacio, así que los renglones fijos van en la plantilla.
-- La plantilla lleva botones de respuesta rápida ("✅ Confirmar pedido" y "Cambiar datos") para que confirmar sea un solo toque.
+- La plantilla lleva botones de respuesta rápida ("Confirmar pedido" y "Cambiar datos" (Meta no deja emojis en los botones)) para que confirmar sea un solo toque.
 - Cuenta como confirmación cualquier "sí": confirmo, confirmar, sí, si señor, ok, listo, perfecto, dale, de una, 👍, o el botón. Las palabras comunes se reconocen sin IA (gratis); solo si la respuesta es dudosa ("sí pero cámbienme la dirección") la clasifica la IA.
 
 Corregir datos (pedido de Sebastián, 9 nov 2026):
 
-- La clienta ve dos botones: "✅ Confirmar pedido" y "Corregir datos".
+- La clienta ve dos botones: "Confirmar pedido" y "Corregir datos".
 - "Corregir datos" le abre un formulario dentro del mismo WhatsApp (WhatsApp Flows) con sus datos ya llenos (nombre, celular, ciudad, barrio, dirección); cambia solo lo que quiera y toca Enviar. La app actualiza el pedido y le vuelve a mostrar el resumen para confirmar.
 - También puede corregir escribiendo normal en el chat ("mejor envíenlo a otra dirección"): la IA responde corto ("Ok, no hay ningún problema. Envía los datos que deseas editar directamente aquí."), toma el dato nuevo y vuelve a mostrar el resumen.
 - Después de confirmar: a los ~5 segundos sale el mensaje de pedido confirmado. Durante los 5 minutos de espera, si la clienta escribe "no, espera, faltó…", la subida a Dropi se detiene, se corrige y la espera arranca de nuevo.

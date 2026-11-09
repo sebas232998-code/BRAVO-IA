@@ -23,7 +23,7 @@ export interface ConfigWhatsApp {
 
 export const NOMBRE_PLANTILLA = "confirmacion_pedido";
 export const IDIOMA_PLANTILLA = "es";
-export const BOTON_CONFIRMAR = "✅ Confirmar pedido";
+export const BOTON_CONFIRMAR = "Confirmar pedido"; // Meta no deja emojis en los botones
 export const BOTON_CORREGIR = "Corregir datos";
 
 // Meta no deja saltos de línea dentro de un espacio {{n}}: los renglones fijos van en la plantilla.
@@ -125,7 +125,7 @@ async function llamarMeta(ruta: string, token: string, cuerpo: unknown): Promise
 export function explicarErrorMeta(e?: { message?: string; error_user_msg?: string; code?: number }): string {
   if (!e) return "Meta respondió con un error sin detalle.";
   if (e.code === 190) return "El token de acceso venció o no es válido. Genera uno nuevo en Meta y pégalo aquí.";
-  if (e.code === 131030) return "Ese número no está en la lista de números permitidos del número de prueba. Agrégalo en Meta (paso 5).";
+  if (e.code === 131030) return "Ese número no está en la lista de números permitidos del número de prueba. Agrégalo en Meta → Paso 1. Probar → Destinatario.";
   if (e.code === 131047) return "Pasaron más de 24 horas desde el último mensaje de la clienta: hay que usar la plantilla aprobada.";
   if (e.code === 132001) return "La plantilla no existe o todavía no está aprobada por Meta.";
   if (e.code === 100) return `Meta dice que falta o sobra un dato: ${e.error_user_msg ?? e.message ?? ""}`.trim();
