@@ -153,6 +153,21 @@ Dirección: Cra 45 # 12-30
 Si todo está correcto, envía la palabra *CONFIRMAR* y te lo despachamos lo más pronto posible 🚚
 ```
 
+Respuesta cuando la clienta confirma (se envía unos 5 segundos después de su "CONFIRMAR", con el renglón en blanco en medio). La espera de 5 minutos antes de subir a Dropi sigue igual:
+
+```
+✅ ¡Listo! Tu pedido ha sido confirmado.
+
+Tu pedido está siendo procesado y será despachado lo más pronto posible 🚚
+```
+
+Que no parezca un robot:
+
+- Nunca responder al instante: esperar unos segundos, más si el mensaje es largo, como si alguien lo estuviera escribiendo.
+- No repetir siempre el mismo texto palabra por palabra en las conversaciones (salvo la confirmación y el resumen del pedido, que van fijos).
+- Responder a lo que la clienta dijo, con sus palabras, no con respuestas genéricas.
+- Mensajes cortos, como se escribe en WhatsApp.
+
 Tono por defecto:
 
 - Cálido, formal y natural, como hablando ("te cuento, mira…"), no de plantilla.
