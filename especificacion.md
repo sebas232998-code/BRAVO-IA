@@ -166,7 +166,7 @@ Corregir datos (pedido de Sebastián, 9 nov 2026):
 
 - La clienta ve dos botones: "✅ Confirmar pedido" y "Corregir datos".
 - "Corregir datos" le abre un formulario dentro del mismo WhatsApp (WhatsApp Flows) con sus datos ya llenos (nombre, celular, ciudad, barrio, dirección); cambia solo lo que quiera y toca Enviar. La app actualiza el pedido y le vuelve a mostrar el resumen para confirmar.
-- También puede corregir escribiendo normal en el chat ("mejor envíenlo a otra dirección"): la IA responde amable ("Claro, no hay ningún problema. Envíame aquí los datos que quieres cambiar o, si te queda más fácil, toca Corregir datos"), toma el dato nuevo y vuelve a mostrar el resumen.
+- También puede corregir escribiendo normal en el chat ("mejor envíenlo a otra dirección"): la IA responde corto ("Ok, no hay ningún problema. Envía los datos que deseas editar directamente aquí."), toma el dato nuevo y vuelve a mostrar el resumen.
 - Después de confirmar: a los ~5 segundos sale el mensaje de pedido confirmado. Durante los 5 minutos de espera, si la clienta escribe "no, espera, faltó…", la subida a Dropi se detiene, se corrige y la espera arranca de nuevo.
 
 Respuesta cuando la clienta confirma (se envía unos 5 segundos después de su "CONFIRMAR", con el renglón en blanco en medio). La espera de 5 minutos antes de subir a Dropi sigue igual:
