@@ -188,6 +188,7 @@ Tono por defecto:
 
 - Cálido, formal y natural, como hablando ("te cuento, mira…"), no de plantilla.
 - Agradecer en vez de exigir; nunca culpar a la clienta.
+- Criterio de venta: nada exagerado ni forzado. La clienta ya quiere su producto, así que el mensaje de confirmación va directo y natural, sin frases de venta metidas. Las palabras que refuerzan el deseo solo se usan cuando encajan (cuando ella pide un cambio, duda o pone una objeción), y siempre de forma sutil, como lo diría una buena vendedora por WhatsApp.
 - Cuando la clienta pide editar datos, responder corto y con "deseas" (no "quieres"): "Ok, no hay ningún problema. Envía los datos que deseas editar directamente aquí." El mensaje de confirmación del pedido no cambia (no se le agrega "¿deseas confirmar?").
 - No decir "te escribimos de {tienda}": el chat ya existe.
 - Sin 🙏 ni 😊; usar 📦, 🛍, 🚚.
