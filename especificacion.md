@@ -201,3 +201,10 @@ Tono por defecto:
 | 1. Confirmar y subir | Shopify → app, confirmación por WhatsApp, espera de 5 min, edición de datos, envío a Dropi, bandeja de errores, seguimiento de 3 mensajes con descuento | Los pedidos de Rumbo y PETION se confirman y suben sin tocar Dropi a mano |
 | 2. Rescatar y medir | Novedades, cerebro, días hábiles, panel, stock con Bravo Check, resumen diario | La tasa de entrega se ve por producto y ciudad, y las novedades se atienden solas |
 | 3. Escalar y vender | Meta y TikTok Ads, varios usuarios, mensualidad, tiendas de apps | Otro dropshipper la usa con sus propias tiendas |
+
+## Avance: WhatsApp conectado (9 nov 2026)
+
+- Pantalla `/whatsapp`: por tienda se guardan Phone number ID, WABA ID, token y App secret (en Supabase, solo los lee el servidor), mensaje de prueba (hello_world), URL y token de verificación del webhook, y botón para crear la plantilla `confirmacion_pedido` en Meta.
+- En cada pedido "Por confirmar": botón "Enviar confirmación por WhatsApp" (plantilla aprobada) y chat del pedido.
+- Webhook `/api/webhooks/whatsapp`: guarda los mensajes; un "sí" claro marca el pedido como confirmado y a los ~5 s responde el mensaje de pedido confirmado; "Corregir datos" responde con el texto de editar datos. Lo dudoso solo se guarda.
+- Todavía NO: envío automático al entrar el pedido, subida automática a Dropi a los 5 minutos, seguimiento de 3 mensajes, formulario de WhatsApp Flows.

@@ -12,6 +12,10 @@ import {
 } from "@/lib/db";
 import { armarOrdenDropi, crearOrdenDropi, dropiConfigurado, FaltaDato } from "@/lib/dropi";
 import { normalizarTelefono } from "@/lib/telefono";
+import { configWhatsAppDe } from "@/lib/db";
+import { enviarYGuardar } from "@/lib/wa-servidor";
+import { mensajePlantillaConfirmacion } from "@/lib/whatsapp";
+import { mensajeConfirmacion } from "@/lib/mensajes";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").replace(/\s+/g, " ").trim();
 
@@ -106,5 +110,21 @@ export async function eliminarPedido(f: FormData) {
   const p = await obtenerPedido(id);
   if (!p || p.dropi_order_id) return; // los que ya están en Dropi no se borran desde aquí
   await borrarPedido(id);
+  revalidatePath("/");
+}
+
+// Manda a la clienta el resumen del pedido con la plantilla aprobada por Meta.
+export async function enviarConfirmacionWhatsApp(f: FormData) {
+  const id = texto(f, "id");
+  const p = await obtenerPedido(id);
+  if (!p || p.estado !== "por_confirmar") return;
+  if (!p.telefono) {
+    await registrarEvento(id, "error_whatsapp", { mensaje: "Número no válido" });
+    return revalidatePath("/");
+  }
+  const c = await configWhatsAppDe(p.tienda_dominio);
+  if (!c) return;
+  const r = await enviarYGuardar(c, p.telefono, mensajePlantillaConfirmacion(p, c), mensajeConfirmacion(p), id);
+  if (r.ok) await registrarEvento(id, "confirmacion_enviada");
   revalidatePath("/");
 }

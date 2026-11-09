@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Pedido } from "./tipos";
 import type { VinculoDropi } from "./dropi";
+import type { ConfigWhatsApp } from "./whatsapp";
 
 let cliente: SupabaseClient | null = null;
 
@@ -106,4 +107,106 @@ export async function listarPedidos(limite = 100): Promise<Pedido[]> {
     .limit(limite);
   if (error) throw error;
   return data as Pedido[];
+}
+
+// ---------- WhatsApp ----------
+
+export async function listarTiendas(): Promise<{ dominio: string; nombre: string }[]> {
+  const { data, error } = await db().from("tiendas").select("dominio, nombre").order("nombre");
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function configsWhatsApp(): Promise<ConfigWhatsApp[]> {
+  const { data, error } = await db().from("whatsapp_config").select("*");
+  if (error) return []; // si aún no se corrió la migración 003
+  return (data ?? []) as ConfigWhatsApp[];
+}
+
+export async function configWhatsAppDe(tienda: string): Promise<ConfigWhatsApp | null> {
+  const { data, error } = await db().from("whatsapp_config").select("*").eq("tienda_dominio", tienda).maybeSingle();
+  if (error) return null;
+  return data as ConfigWhatsApp | null;
+}
+
+export async function configPorNumero(phoneNumberId: string): Promise<ConfigWhatsApp | null> {
+  const { data, error } = await db()
+    .from("whatsapp_config")
+    .select("*")
+    .eq("phone_number_id", phoneNumberId)
+    .limit(1)
+    .maybeSingle();
+  if (error) return null;
+  return data as ConfigWhatsApp | null;
+}
+
+export async function existeVerifyToken(token: string): Promise<boolean> {
+  const { data, error } = await db().from("whatsapp_config").select("tienda_dominio").eq("verify_token", token).limit(1);
+  return !error && (data?.length ?? 0) > 0;
+}
+
+export async function guardarConfigWhatsApp(c: ConfigWhatsApp) {
+  const { error } = await db()
+    .from("whatsapp_config")
+    .upsert({ ...c, actualizado_en: new Date().toISOString() }, { onConflict: "tienda_dominio" });
+  if (error) throw error;
+}
+
+// El pedido más reciente de ese número que esté esperando respuesta.
+export async function pedidoAbiertoDe(tienda: string, telefono: string): Promise<Pedido | null> {
+  const { data, error } = await db()
+    .from("pedidos")
+    .select("*")
+    .eq("tienda_dominio", tienda)
+    .eq("telefono", telefono)
+    .in("estado", ["por_confirmar", "confirmado", "sin_respuesta"])
+    .order("creado_en", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as Pedido | null;
+}
+
+export interface MensajeGuardado {
+  pedido_id: string | null;
+  direccion: "entrante" | "saliente";
+  texto: string;
+  creado_en: string;
+}
+
+// Devuelve false si el mensaje ya estaba guardado (Meta a veces reenvía el mismo aviso).
+export async function guardarMensaje(m: {
+  wa_id: string | null;
+  tienda_dominio: string | null;
+  pedido_id: string | null;
+  telefono: string;
+  direccion: "entrante" | "saliente";
+  texto: string;
+  tipo: string;
+  creado_en?: string;
+}): Promise<boolean> {
+  if (m.wa_id) {
+    const { data, error } = await db()
+      .from("mensajes_whatsapp")
+      .upsert(m, { onConflict: "wa_id", ignoreDuplicates: true })
+      .select("id");
+    if (error) throw error;
+    return (data?.length ?? 0) > 0;
+  }
+  const { error } = await db().from("mensajes_whatsapp").insert(m);
+  if (error) throw error;
+  return true;
+}
+
+export async function mensajesDePedidos(ids: string[]): Promise<Record<string, MensajeGuardado[]>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await db()
+    .from("mensajes_whatsapp")
+    .select("pedido_id, direccion, texto, creado_en")
+    .in("pedido_id", ids)
+    .order("creado_en", { ascending: true });
+  if (error) return {};
+  const salida: Record<string, MensajeGuardado[]> = {};
+  for (const m of (data ?? []) as MensajeGuardado[]) (salida[m.pedido_id!] ??= []).push(m);
+  return salida;
 }

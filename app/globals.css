@@ -93,3 +93,14 @@ input {
 
 .editar { display: grid; gap: 10px; margin-top: 10px; }
 .editar label { display: grid; gap: 4px; font-size: 13px; color: var(--suave); }
+
+.caja { background: var(--tarjeta); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+.volver, .enlace { color: var(--acento); text-decoration: none; font-size: 14px; }
+a.filtro { text-decoration: none; }
+.editar em { font-style: normal; color: var(--suave); font-size: 12px; }
+.dato { display: grid; gap: 4px; font-size: 13px; color: var(--suave); margin-top: 10px; }
+.dato code { background: #111; color: var(--texto); border-radius: 10px; padding: 10px 12px; font-size: 14px; word-break: break-all; user-select: all; }
+.chat { display: grid; gap: 6px; margin-top: 10px; }
+.burbuja { max-width: 85%; padding: 8px 10px; border-radius: 10px; font-size: 14px; white-space: pre-wrap; }
+.burbuja.entrante { background: #202c33; justify-self: start; }
+.burbuja.saliente { background: #005c4b; justify-self: end; }

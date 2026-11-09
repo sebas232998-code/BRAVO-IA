@@ -1,4 +1,6 @@
-import { baseConfigurada, listarPedidos, nombresTiendas, vinculosDe } from "@/lib/db";
+import Link from "next/link";
+import { baseConfigurada, configsWhatsApp, listarPedidos, mensajesDePedidos, nombresTiendas, vinculosDe } from "@/lib/db";
+import type { MensajeGuardado } from "@/lib/db";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
 import { ESTADOS, NOMBRE_ESTADO, type Pedido } from "@/lib/tipos";
@@ -6,6 +8,7 @@ import type { VinculoDropi } from "@/lib/dropi";
 import {
   editarDatos,
   eliminarPedido,
+  enviarConfirmacionWhatsApp,
   marcarConfirmado,
   subirADropi,
   vincularProducto,
@@ -22,6 +25,10 @@ export default async function Inicio() {
   const vinculos: Record<string, VinculoDropi[]> = Object.fromEntries(
     await Promise.all(tiendas.map(async (t) => [t, conectada ? await vinculosDe(t) : []] as const)),
   );
+  const conWhatsApp = new Set(conectada ? (await configsWhatsApp()).map((c) => c.tienda_dominio) : []);
+  const chats: Record<string, MensajeGuardado[]> = conectada
+    ? await mensajesDePedidos(pedidos.map((p) => p.id!).filter(Boolean))
+    : {};
   const nombreTienda = (d: string) => nombres[d] ?? d.replace(".myshopify.com", "").toUpperCase();
 
   const conteo = ESTADOS.map((e) => [e, pedidos.filter((p) => p.estado === e).length] as const).filter(
@@ -33,7 +40,9 @@ export default async function Inicio() {
       <h1>
         Bravo <span>IA</span>
       </h1>
-      <p className="subtitulo">Pedidos de tus tiendas</p>
+      <p className="subtitulo">
+        Pedidos de tus tiendas · <Link href="/whatsapp" className="enlace">Configurar WhatsApp</Link>
+      </p>
 
       {!conectada && (
         <div className="aviso">
@@ -95,6 +104,16 @@ export default async function Inicio() {
 
             {conectada && (
               <div className="botones">
+                {p.estado === "por_confirmar" && conWhatsApp.has(p.tienda_dominio) && p.telefono && (
+                  <form action={enviarConfirmacionWhatsApp}>
+                    <input type="hidden" name="id" value={p.id} />
+                    <button type="submit" className="principal">
+                      {(chats[p.id!] ?? []).some((m) => m.direccion === "saliente")
+                        ? "Reenviar confirmación 📦"
+                        : "Enviar confirmación por WhatsApp 📦"}
+                    </button>
+                  </form>
+                )}
                 {p.estado === "por_confirmar" && (
                   <form action={marcarConfirmado}>
                     <input type="hidden" name="id" value={p.id} />
@@ -116,6 +135,17 @@ export default async function Inicio() {
                   </form>
                 )}
               </div>
+            )}
+
+            {(chats[p.id!] ?? []).length > 0 && (
+              <details open={(chats[p.id!] ?? []).some((m) => m.direccion === "entrante")}>
+                <summary>Chat de WhatsApp ({chats[p.id!].length})</summary>
+                <div className="chat">
+                  {chats[p.id!].map((m, i) => (
+                    <div key={i} className={`burbuja ${m.direccion}`}>{m.texto}</div>
+                  ))}
+                </div>
+              </details>
             )}
 
             <details>
