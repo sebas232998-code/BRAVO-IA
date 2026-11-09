@@ -52,4 +52,6 @@ export interface Pedido {
   estado: Estado;
   creado_en: string;
   items: ItemPedido[];
+  dropi_order_id?: string | null;
+  error_dropi?: string | null;
 }
