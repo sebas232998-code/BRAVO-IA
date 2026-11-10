@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Bravo IA",
   description: "App creada por dropshippers, para dropshippers",
   manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon-192.png", apple: "/icon-180.png" },
   appleWebApp: { capable: true, title: "Bravo IA", statusBarStyle: "black-translucent" },
 };
 

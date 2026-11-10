@@ -19,5 +19,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/webhooks|privacidad|eliminar-datos|manifest.webmanifest|icon.svg|_next/static|_next/image).*)"],
+  matcher: ["/((?!api/webhooks|privacidad|eliminar-datos|manifest.webmanifest|icon-.*\\.png|_next/static|_next/image).*)"],
 };
