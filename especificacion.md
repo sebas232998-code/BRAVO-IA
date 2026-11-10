@@ -210,3 +210,10 @@ Tono por defecto:
 - Webhook `/api/webhooks/whatsapp`: guarda los mensajes; un "sí" claro marca el pedido como confirmado y a los ~5 s responde el mensaje de pedido confirmado; "Corregir datos" responde con el texto de editar datos. Lo dudoso solo se guarda.
 - Todavía NO: envío automático al entrar el pedido, subida automática a Dropi a los 5 minutos, seguimiento de 3 mensajes, formulario de WhatsApp Flows.
 - Vincular productos sin escribir IDs (pendiente): la app de Dropi en Shopify guarda en cada producto y variante un metafield `dropi._dropi_product` / `dropi._dropi_variation` con el ID del producto y de la variación en Dropi. Cuando Bravo IA tenga acceso a la API de Shopify de cada tienda (al conectar la tienda con login), debe leerlos y vincular sola. Por ahora PETION quedó vinculada a mano (cubresofá, producto Dropi 2286474, 4 variaciones).
+
+Tasa de entrega con semáforo (pedido de Sebastián, 9 nov 2026):
+
+- Círculo de porcentaje que cambia de color gradualmente: verde desde 85 % o más, pasando a amarillo hacia 70 %, zapote/naranja hacia 60 %, y rojo al acercarse y pasar el punto de equilibrio.
+- Punto de equilibrio calculado por producto con los datos reales: tasa mínima = (flete + CPA) ÷ (precio de venta − costo del producto). En Dropi la devolución solo cobra el flete de ida. Se marca como una rayita en el círculo.
+- Mensaje corto según la zona: "Excelente", "Bien, pero ojo", "En riesgo (faltan X puntos para perder)", "Perdiendo plata".
+- Filtro por período: hoy, semana, mes.
