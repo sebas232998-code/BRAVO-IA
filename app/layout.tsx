@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Bravo IA", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = { themeColor: "#111111", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#0b0e11", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

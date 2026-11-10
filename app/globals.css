@@ -1,9 +1,11 @@
 :root {
-  --fondo: #111111;
-  --tarjeta: #1c1c1c;
-  --texto: #f2f2f2;
-  --suave: #9a9a9a;
-  --acento: #f5c542;
+  --fondo: #0b0e11;
+  --tarjeta: #181a20;
+  --campo: #0b0e11;
+  --linea: #2b3139;
+  --texto: #eaecef;
+  --suave: #929aa5;
+  --acento: #f0b90b;
   --error: #ff6b5e;
   --ok: #4cd18a;
 }
@@ -41,7 +43,7 @@ h1 span { color: var(--acento); }
 .pedido-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .pedido-nombre { font-weight: 600; font-size: 17px; }
 .pedido-meta { color: var(--suave); font-size: 13px; }
-.estado { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #2b2b2b; white-space: nowrap; }
+.estado { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #2b3139; white-space: nowrap; }
 .estado-error { color: var(--error); }
 .estado-por_confirmar { color: var(--acento); }
 .estado-enviado_dropi, .estado-entregado { color: var(--ok); }
@@ -68,22 +70,22 @@ button {
   font: inherit;
   font-size: 15px;
   border: 0;
-  border-radius: 12px;
-  padding: 10px 14px;
-  background: #2b2b2b;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: #2b3139;
   color: var(--texto);
   cursor: pointer;
 }
-button.principal { background: var(--acento); color: #111; font-weight: 600; }
+button.principal { background: var(--acento); color: #0b0e11; font-weight: 600; }
 button.peligro { background: #3a1714; color: var(--error); margin-top: 8px; }
 
 input {
   font: inherit;
   font-size: 16px;
   width: 100%;
-  background: #111;
+  background: var(--campo);
   color: var(--texto);
-  border: 1px solid #333;
+  border: 1px solid var(--linea);
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -99,7 +101,7 @@ input {
 a.filtro { text-decoration: none; }
 .editar em { font-style: normal; color: var(--suave); font-size: 12px; }
 .dato { display: grid; gap: 4px; font-size: 13px; color: var(--suave); margin-top: 10px; }
-.dato code { background: #111; color: var(--texto); border-radius: 10px; padding: 10px 12px; font-size: 14px; word-break: break-all; user-select: all; }
+.dato code { background: var(--campo); color: var(--texto); border-radius: 10px; padding: 10px 12px; font-size: 14px; word-break: break-all; user-select: all; }
 .chat { display: grid; gap: 6px; margin-top: 10px; }
 .burbuja { max-width: 85%; padding: 8px 10px; border-radius: 10px; font-size: 14px; white-space: pre-wrap; }
 .burbuja.entrante { background: #202c33; justify-self: start; }

@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "App creada por dropshippers, para dropshippers",
     start_url: "/",
     display: "standalone",
-    background_color: "#111111",
-    theme_color: "#111111",
+    background_color: "#0b0e11",
+    theme_color: "#0b0e11",
     lang: "es",
     icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
   };
