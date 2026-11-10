@@ -130,7 +130,7 @@ Si un error se repite, la app guarda la corrección para la próxima vez.
 
 ## Panel y alertas (Fase 2)
 
-Tasa de entrega (entregados ÷ despachados) por tienda, producto, ciudad y transportadora; pedidos estancados; utilidad real por pedido entregado; mejor transportadora por ciudad; recaudo pendiente; ventas rescatadas por la IA; resumen diario por WhatsApp.
+Tasa de entrega (entregados ÷ despachados) por tienda, producto, ciudad y transportadora; pedidos estancados; utilidad real por pedido entregado; mejor transportadora por ciudad; recaudo pendiente; ventas rescatadas (en el panel se llama "Ventas rescatadas por Bravo IA", con el número grande en amarillo, para que se vea lo que la app le ganó al vendedor); resumen diario por WhatsApp.
 
 ## Configuración y tono
 
