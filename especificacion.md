@@ -219,3 +219,15 @@ Tasa de entrega con semáforo (pedido de Sebastián, 9 nov 2026):
 - Filtro por período: hoy, semana, mes.
 - El vendedor puede escribir su propia "tasa de entrega mínima para no perder" (campo junto a la rayita). Si no la pone, la app usa la calculada y se la sugiere ("Según tus costos, tu mínimo es 44 %").
 - Notificaciones: aviso cuando la tasa se acerca al mínimo (por ejemplo, a 5 puntos: "Tu tasa de entrega va en 49 %, se está acercando a tu límite del 44 %") y otro cuando lo cruza ("Bajaste de tu tasa mínima con este producto"). Solo se habla de "perder plata" cuando la app conoce el CPA real (porque el vendedor lo escribió o porque Meta/TikTok Ads están conectados); si no, se habla de la tasa mínima. Llegan como notificación al celular y en el resumen diario por WhatsApp.
+
+Tasas de operación (pedido de Sebastián, 9 nov 2026): una sección del panel que muestra, por producto y en total, el embudo completo con nombres fáciles:
+
+| Tasa | Cálculo | Qué le dice al vendedor |
+| --- | --- | --- |
+| Tasa de confirmación | confirmados ÷ pedidos recibidos | Cuántas clientas confirman de verdad |
+| Tasa de entrega | entregados ÷ (entregados + devueltos) | Cuántos pedidos despachados se entregan |
+| Tasa de novedad | pedidos con novedad ÷ despachados | Cuántos tienen problemas en el camino |
+| Tasa de rescate | novedades resueltas ÷ novedades | Cuántas novedades salva Bravo IA |
+| Tasa real de venta | entregados ÷ pedidos recibidos | De cada 100 pedidos, cuántos se vuelven plata |
+
+Cada tasa con su círculo de color y un texto de una línea que explique qué significa.
