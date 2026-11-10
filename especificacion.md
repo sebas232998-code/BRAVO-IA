@@ -238,3 +238,4 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Logros: primeras 100 entregas, 10 ventas rescatadas por Bravo IA, 3 meses seguidos arriba del 85 %, etc.
 - Rachas: días seguidos confirmando todos los pedidos.
 - Tono de felicitación con la marca: "bravo", fuego 🔥, sin exagerar.
+- Los mensajes de celebración hablan de logros, no solo de números: "¡Excelente trabajo! Esta semana superaste tu meta de entrega", "Tu costo por venta estuvo por debajo de tu meta" (cuando se conoce el CPA), "¡Nuevo récord! Es tu mejor semana desde que usas Bravo IA". Con varios usuarios: "Estás por encima del X % de los dropshippers de Bravo IA".
