@@ -239,3 +239,5 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Rachas: días seguidos confirmando todos los pedidos.
 - Tono de felicitación con la marca: "bravo", fuego 🔥, sin exagerar.
 - Los mensajes de celebración hablan de logros, no solo de números: "¡Excelente trabajo! Esta semana superaste tu meta de entrega", "Tu costo por venta estuvo por debajo de tu meta" (cuando se conoce el CPA), "¡Nuevo récord! Es tu mejor semana desde que usas Bravo IA". Con varios usuarios: "Estás por encima del X % de los dropshippers de Bravo IA".
+- Contador de leyendas en el perfil ("🏆 Leyendas: 2 este mes · 7 en total"), para que la gente hable de "cuántas leyendas hice".
+- Botón de compartir al lograr una Leyenda: imagen lista para historias de Instagram/TikTok con el toro, el porcentaje y la marca Bravo IA (sin datos de clientas ni montos, salvo que el vendedor quiera). Sirve como publicidad gratis.
