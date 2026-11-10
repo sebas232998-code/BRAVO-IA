@@ -217,3 +217,5 @@ Tasa de entrega con semáforo (pedido de Sebastián, 9 nov 2026):
 - Punto de equilibrio calculado por producto con los datos reales: tasa mínima = (flete + CPA) ÷ (precio de venta − costo del producto). En Dropi la devolución solo cobra el flete de ida. Se marca como una rayita en el círculo.
 - Mensaje corto según la zona: "Excelente", "Bien, pero ojo", "En riesgo (faltan X puntos para perder)", "Perdiendo plata".
 - Filtro por período: hoy, semana, mes.
+- El vendedor puede escribir su propia "tasa de entrega mínima para no perder" (campo junto a la rayita). Si no la pone, la app usa la calculada y se la sugiere ("Según tus costos, tu mínimo es 44 %").
+- Notificaciones: aviso cuando la tasa se acerca al mínimo (por ejemplo, a 5 puntos: "Tu tasa de entrega va en 49 %, se está acercando a tu límite del 44 %") y otro cuando lo cruza ("Estás perdiendo plata con este producto"). Llegan como notificación al celular y en el resumen diario por WhatsApp.
