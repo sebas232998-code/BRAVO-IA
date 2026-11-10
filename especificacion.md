@@ -234,7 +234,7 @@ Cada tasa con su círculo de color y un texto de una línea que explique qué si
 
 Gamificación (pedido de Sebastián, 9 nov 2026):
 
-- Animación de confeti al abrir el panel cuando el vendedor logra algo: cerrar el mes con la tasa de entrega en verde ("¡Mes bravo! Entregaste el 91 % de tus pedidos"), superar su mejor mes, etc. Solo una vez por logro, para que no canse.
+- Animación de confeti al abrir el panel cuando el vendedor logra algo, revisado por semana (ni todos los días ni solo cada mes): cerrar la semana con la tasa de entrega en verde ("¡Semana brava! Entregaste el 91 % de tus pedidos"), superar su mejor semana, etc. Máximo una celebración por semana, para que no canse.
 - Logros: primeras 100 entregas, 10 ventas rescatadas por Bravo IA, 3 meses seguidos arriba del 85 %, etc.
 - Rachas: días seguidos confirmando todos los pedidos.
 - Tono de felicitación con la marca: "bravo", fuego 🔥, sin exagerar.
