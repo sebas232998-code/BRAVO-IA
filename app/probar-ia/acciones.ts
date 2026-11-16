@@ -3,7 +3,7 @@
 import { catalogoDe, tiendaDe } from "@/lib/db";
 import { variantesDePedido } from "@/lib/catalogo";
 import { iaConfigurada } from "@/lib/conversacion";
-import { atenderMensaje, llamarClaudeReal, type MensajeChat } from "@/lib/ia/agente";
+import { atenderMensaje, explicarErrorIA, llamarClaudeReal, type MensajeChat } from "@/lib/ia/agente";
 import { completarRespuesta } from "@/lib/ia/cambios";
 import { clasificarReal } from "@/lib/ia/clasificar";
 import { MENSAJE_CONFIRMADO } from "@/lib/mensajes";
@@ -82,6 +82,6 @@ export async function probarMensaje(previo: EstadoSimulador, f: FormData): Promi
     }
     return { pedido, chat: salida };
   } catch (e) {
-    return { ...previo, error: `La IA falló: ${e instanceof Error ? e.message : String(e)}` };
+    return { ...previo, error: explicarErrorIA(e) };
   }
 }

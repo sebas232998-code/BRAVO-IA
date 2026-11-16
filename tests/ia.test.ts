@@ -156,3 +156,10 @@ describe("cerebro de la tienda", () => {
     expect(REGLAS).toContain("responde solo con lo que diga <tienda>");
   });
 });
+
+describe("errores de la IA en español", () => {
+  it("sin saldo", async () => {
+    const { explicarErrorIA } = await import("../lib/ia/agente");
+    expect(explicarErrorIA(new Error('400 {"message":"Your credit balance is too low to access the Anthropic API."}'))).toMatch(/no tiene saldo/);
+  });
+});

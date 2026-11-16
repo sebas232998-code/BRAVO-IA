@@ -238,3 +238,17 @@ export async function atenderMensaje(
   // Demasiadas vueltas: mejor que lo mire el vendedor.
   return { texto: null, pedido: pedidoOriginal, cambio: false, confirmar: false, escalar: "La IA no logró resolver este mensaje." };
 }
+
+// Explica en español los errores más comunes de la API de Anthropic.
+export function explicarErrorIA(e: unknown): string {
+  const t = e instanceof Error ? e.message : String(e);
+  if (/credit balance is too low/i.test(t)) {
+    return "Tu cuenta de Anthropic no tiene saldo. Entra a platform.claude.com → Facturación y carga créditos (con 5 dólares alcanza para mucho).";
+  }
+  if (e instanceof Anthropic.AuthenticationError || /invalid x-api-key|authentication/i.test(t)) {
+    return "La clave de Anthropic no es válida. Revisa ANTHROPIC_API_KEY en Vercel.";
+  }
+  if (e instanceof Anthropic.RateLimitError) return "Anthropic está recibiendo demasiados mensajes. Intenta en un minuto.";
+  if (e instanceof Anthropic.APIConnectionError) return "No se pudo conectar con Anthropic. Intenta otra vez.";
+  return `Error de la IA: ${t.slice(0, 200)}`;
+}

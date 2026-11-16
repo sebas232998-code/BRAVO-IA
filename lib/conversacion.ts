@@ -11,7 +11,7 @@ import {
   tiendaDe,
 } from "./db";
 import { variantesDePedido } from "./catalogo";
-import { atenderMensaje, llamarClaudeReal, type LlamarClaude } from "./ia/agente";
+import { atenderMensaje, explicarErrorIA, llamarClaudeReal, type LlamarClaude } from "./ia/agente";
 import { completarRespuesta } from "./ia/cambios";
 import { clasificarReal, type Clasificar } from "./ia/clasificar";
 import { MENSAJE_CONFIRMADO } from "./mensajes";
@@ -119,7 +119,7 @@ export async function atenderConIA(
   } catch (e) {
     console.log("[ia] error", e);
     await actualizarPedido(p.id, {
-      atencion_vendedor: "La IA no pudo responder (error de conexión). Revisa el chat.",
+      atencion_vendedor: `La IA no pudo responder: ${explicarErrorIA(e)} Revisa el chat.`,
       ...(p.estado === "confirmado" ? { dropi_en_pausa: "La clienta escribió y la IA no pudo responder." } : {}),
     });
     return;
