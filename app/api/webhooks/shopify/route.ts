@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { firmaValida, convertirPedido, type PedidoShopify } from "@/lib/shopify";
 import { guardarPedido } from "@/lib/db";
+import { ciudadAprendida } from "@/lib/flujo";
 
 // Shopify llama aquí cada vez que entra un pedido (webhook "Creación de pedido").
 export async function POST(req: Request) {
@@ -16,6 +17,9 @@ export async function POST(req: Request) {
 
   const tienda = req.headers.get("x-shopify-shop-domain") ?? "desconocida";
   const pedido = convertirPedido(JSON.parse(cuerpo) as PedidoShopify, tienda);
+  // Ciudad mal escrita que el vendedor ya corrigió antes: se arregla de una vez (también en el mensaje a la clienta).
+  const corregida = await ciudadAprendida(pedido);
+  if (corregida) Object.assign(pedido, corregida);
   const nuevo = await guardarPedido(pedido);
 
   // Shopify solo necesita un 200 rápido; si no lo recibe, reintenta.

@@ -1,4 +1,5 @@
 import {
+  correccionCiudad,
   actualizarPedido,
   apartarConfirmacion,
   apartarSeguimiento,
@@ -10,6 +11,7 @@ import {
 import { armarOrdenDropi, crearOrdenDropi, dropiConfigurado, FaltaDato } from "./dropi";
 import { mensajeConfirmacion } from "./mensajes";
 import type { Pedido } from "./tipos";
+import { textoDropi } from "./textos";
 import { enviarYGuardar } from "./wa-servidor";
 import { mensajePlantilla, mensajePlantillaConfirmacion, resumenProductos, type ConfigWhatsApp } from "./whatsapp";
 import { llenarPlantilla, mensajeSeguimiento, PLANTILLAS_SEGUIMIENTO, type ConfigSeguimiento } from "./seguimiento";
@@ -58,6 +60,13 @@ export async function subirPedido(id: string, automatico: boolean): Promise<Resu
   };
 
   if (!dropiConfigurado()) return fallo("Falta poner el token de Dropi (DROPI_INTEGRATION_KEY) en Vercel.");
+
+  const corregida = await ciudadAprendida(p);
+  if (corregida) {
+    await actualizarPedido(id, corregida);
+    await registrarEvento(id, "ciudad_corregida", { antes: { ciudad: p.ciudad, departamento: p.departamento }, despues: corregida });
+    Object.assign(p, corregida);
+  }
 
   let orden;
   try {
@@ -120,4 +129,12 @@ export async function marcarSinRespuesta(p: Pedido): Promise<void> {
   if (!p.id) return;
   await actualizarPedido(p.id, { estado: "sin_respuesta" });
   await registrarEvento(p.id, "sin_respuesta", { seguimientos: p.seguimientos_enviados ?? 0 });
+}
+
+// Si el vendedor ya corrigió antes esta misma ciudad mal escrita, se aplica sola.
+// Devuelve los cambios a guardar (o null si no hay corrección conocida).
+export async function ciudadAprendida(p: Pick<Pedido, "ciudad" | "departamento">) {
+  const c = await correccionCiudad(textoDropi(p.ciudad ?? ""));
+  if (!c || textoDropi(c.ciudad) === textoDropi(p.ciudad ?? "")) return null;
+  return { ciudad: c.ciudad, departamento: c.departamento ?? p.departamento };
 }

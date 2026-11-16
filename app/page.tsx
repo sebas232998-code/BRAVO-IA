@@ -9,6 +9,8 @@ import {
   vinculosDe,
 } from "@/lib/db";
 import { minutosParaSubir } from "@/lib/automatico";
+import { problemasDe } from "@/lib/bandeja";
+import { problemaTelefono } from "@/lib/telefono";
 import type { MensajeGuardado } from "@/lib/db";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { fechaCorta, fechaHora, formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
@@ -27,15 +29,23 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function Inicio({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+export default async function Inicio({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string; error?: string; ver?: string }>;
+}) {
   const q = await searchParams;
   const conectada = baseConfigurada();
-  const pedidos: Pedido[] = conectada ? await listarPedidos() : PEDIDOS_EJEMPLO;
+  const todos: Pedido[] = conectada ? await listarPedidos() : PEDIDOS_EJEMPLO;
   const nombres = conectada ? await nombresTiendas() : {};
-  const tiendas = [...new Set(pedidos.map((p) => p.tienda_dominio))];
+  const tiendas = [...new Set(todos.map((p) => p.tienda_dominio))];
   const vinculos: Record<string, VinculoDropi[]> = Object.fromEntries(
     await Promise.all(tiendas.map(async (t) => [t, conectada ? await vinculosDe(t) : []] as const)),
   );
+  const problemas = (p: Pedido) => problemasDe(p, vinculos[p.tienda_dominio] ?? []);
+  const conProblemas = todos.filter((p) => problemas(p).length > 0);
+  const verErrores = q.ver === "errores";
+  const pedidos = verErrores ? conProblemas : todos;
   const configs = conectada ? await configsWhatsApp() : [];
   const conWhatsApp = new Set(configs.map((c) => c.tienda_dominio));
   const tokensPorVencer = configs.filter(
@@ -48,7 +58,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const ahora = new Date();
   const nombreTienda = (d: string) => nombres[d] ?? d.replace(".myshopify.com", "").toUpperCase();
 
-  const conteo = ESTADOS.map((e) => [e, pedidos.filter((p) => p.estado === e).length] as const).filter(
+  const conteo = ESTADOS.map((e) => [e, todos.filter((p) => p.estado === e).length] as const).filter(
     ([, n]) => n > 0,
   );
 
@@ -72,6 +82,22 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
           <Link href={`/whatsapp?tienda=${encodeURIComponent(c.tienda_dominio)}`} className="enlace">Pegar uno nuevo</Link>
         </div>
       ))}
+
+      {(conProblemas.length > 0 || verErrores) && (
+        <div className={verErrores ? "caja" : "problema caja"}>
+          {verErrores ? (
+            <>
+              🧰 Bandeja de errores: {conProblemas.length === 0 ? "todo en orden 🔥" : `${conProblemas.length} por resolver`} ·{" "}
+              <Link href="/" className="enlace">Ver todos los pedidos</Link>
+            </>
+          ) : (
+            <>
+              🧰 {conProblemas.length === 1 ? "1 pedido necesita" : `${conProblemas.length} pedidos necesitan`} tu ayuda ·{" "}
+              <Link href="/?ver=errores" className="enlace">Abrir bandeja de errores</Link>
+            </>
+          )}
+        </div>
+      )}
 
       {!conectada && (
         <div className="aviso">
@@ -110,13 +136,26 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               <span className={`estado estado-${p.estado}`}>{NOMBRE_ESTADO[p.estado]}</span>
             </div>
 
+            {verErrores && (
+              <div className="filtros chips">
+                {problemas(p).map((x) => (
+                  <span key={x} className="filtro chip-error">{x}</span>
+                ))}
+              </div>
+            )}
             {!p.telefono && (
               <div className="problema">
-                Número no válido: “{p.telefono_original ?? "vacío"}”. Corrígelo en “Editar datos”.
+                Número no válido: “{p.telefono_original ?? "vacío"}”. {problemaTelefono(p.telefono_original)} Corrígelo en
+                “Editar datos”.
               </div>
             )}
             {p.error_whatsapp && (p.estado === "por_confirmar" || p.estado === "sin_respuesta") && (
-              <div className="problema">No se pudo enviar el WhatsApp: {p.error_whatsapp}</div>
+              <div className="problema">
+                No se pudo enviar el WhatsApp: {p.error_whatsapp}{" "}
+                {p.telefono && (
+                  <a href={`tel:+${p.telefono}`} className="enlace">📞 Llamar</a>
+                )}
+              </div>
             )}
             {p.estado === "por_confirmar" && (p.seguimientos_enviados ?? 0) > 0 && (
               <div className="espera">
@@ -218,7 +257,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
             </details>
 
             {conectada && !enDropi && (
-              <details>
+              <details open={verErrores && problemas(p).some((x) => /Número|ciudad|dirección|Dropi lo rechazó|no le llegó/.test(x))}>
                 <summary>Editar datos</summary>
                 <form action={editarDatos} className="editar">
                   <input type="hidden" name="id" value={p.id} />

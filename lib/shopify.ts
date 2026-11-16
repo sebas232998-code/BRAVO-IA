@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { normalizarTelefono } from "./telefono";
+import { normalizarTelefono, primerTelefonoValido } from "./telefono";
 import type { Pedido } from "./tipos";
 
 // Shopify firma cada webhook con la clave que aparece en
@@ -55,7 +55,10 @@ export function convertirPedido(o: PedidoShopify, tienda: string): Pedido {
     limpio(dir.name) ||
     limpio(`${dir.first_name ?? ""} ${dir.last_name ?? ""}`) ||
     limpio(`${o.customer?.first_name ?? ""} ${o.customer?.last_name ?? ""}`);
-  const telefonoOriginal = limpio(dir.phone) || limpio(o.phone) || limpio(o.customer?.phone) || null;
+  // Si el número de envío está malo, se prueba con los otros que trae el pedido.
+  const candidatos = [dir.phone, o.phone, o.customer?.phone, o.billing_address?.phone].map(limpio).filter(Boolean);
+  const telefono = primerTelefonoValido(candidatos);
+  const telefonoOriginal = (telefono && candidatos.find((c) => normalizarTelefono(c) === telefono)) || candidatos[0] || null;
   const direccion = [limpio(dir.address1), limpio(dir.address2)].filter(Boolean).join(", ");
 
   return {
@@ -63,7 +66,7 @@ export function convertirPedido(o: PedidoShopify, tienda: string): Pedido {
     shopify_order_id: o.id,
     numero: o.name,
     nombre_clienta: nombre || "Sin nombre",
-    telefono: normalizarTelefono(telefonoOriginal),
+    telefono,
     telefono_original: telefonoOriginal,
     departamento: limpio(dir.province) || null,
     ciudad: limpio(dir.city) || null,

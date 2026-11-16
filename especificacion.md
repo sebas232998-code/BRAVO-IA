@@ -261,3 +261,12 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Si no responde al tercero, al vencer el descuento (o 24 horas) el pedido queda "Sin respuesta" y no se le vuelve a escribir.
 - Si confirma a tiempo, el total se rebaja y sube así a Dropi; el panel muestra "Confirmó con descuento". Si confirma después de vencido, se le avisa con amabilidad y se le ofrece el precio normal; si vuelve a confirmar, queda al precio normal.
 - Si un mensaje no sale, no se reintenta solo (para no escribirle varias veces) y el pedido muestra el error; si el que falla es el del descuento, el descuento no cuenta.
+
+## Avance: bandeja de errores (16 nov 2026)
+
+- En Pedidos sale un aviso "🧰 N pedidos necesitan tu ayuda" que abre la bandeja (`/?ver=errores`): solo los pedidos con algo por resolver, cada uno con sus problemas en rojo y "Editar datos" abierto.
+- Número mal escrito: además de quitar espacios y poner el 57, arregla el 57 repetido, el 0 de más al inicio y dos números escritos juntos; si el de envío está malo, usa otro número que traiga el pedido (el de la clienta o el de facturación). Si no logra, explica el problema ("le falta un dígito", "parece un fijo").
+- Número sin WhatsApp: la app lee los avisos de entrega de Meta; si un mensaje falla, el pedido muestra el motivo con un botón 📞 Llamar, y el seguimiento se detiene hasta que se corrija.
+- Ciudad mal escrita: antes de subir a Dropi quita el departamento pegado ("Cali, Valle", "Medellín - Antioquia", "Cali Valle") y entiende apodos (Medallo, Bquilla, Bmanga, Villavo).
+- Aprende las correcciones: si Dropi rechaza un pedido y el vendedor corrige la ortografía de la ciudad, la próxima vez que llegue escrita igual se arregla sola (desde que entra el pedido). Solo aprende cuando la corrección se parece a lo escrito, para no aprender cambios de ciudad de verdad.
+- Pendiente: "sin cobertura de transportadora" (falta saber qué permite la API de Dropi).

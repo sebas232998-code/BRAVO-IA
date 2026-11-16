@@ -315,3 +315,34 @@ export async function apartarSeguimiento(id: string, numero: number, extra: Reco
   if (error) throw error;
   return (data?.length ?? 0) > 0;
 }
+
+// Guarda si el mensaje se entregó, se leyó o falló. Devuelve el pedido del mensaje (si tiene).
+const ORDEN_ESTADO: Record<string, number> = { sent: 1, delivered: 2, read: 3, failed: 4 };
+export async function marcarEstadoMensaje(waId: string, estado: string): Promise<string | null> {
+  const { data, error } = await db().from("mensajes_whatsapp").select("pedido_id, estado").eq("wa_id", waId).maybeSingle();
+  if (error || !data) return null; // mensaje que no es nuestro, o aún no se corrió la migración 007
+  // Meta a veces manda los avisos en desorden: no se devuelve de "leído" a "entregado".
+  if ((ORDEN_ESTADO[estado] ?? 0) > (ORDEN_ESTADO[data.estado ?? ""] ?? 0)) {
+    await db().from("mensajes_whatsapp").update({ estado }).eq("wa_id", waId);
+  }
+  return data.pedido_id;
+}
+
+// ---------- Correcciones de ciudad aprendidas ----------
+
+export async function correccionCiudad(original: string): Promise<{ ciudad: string; departamento: string | null } | null> {
+  if (!original) return null;
+  const { data, error } = await db()
+    .from("correcciones_ciudad")
+    .select("ciudad, departamento")
+    .eq("original", original)
+    .maybeSingle();
+  if (error) return null; // si aún no se corrió la migración 007
+  return data;
+}
+
+export async function guardarCorreccionCiudad(original: string, ciudad: string, departamento: string | null) {
+  await db()
+    .from("correcciones_ciudad")
+    .upsert({ original, ciudad, departamento, actualizado_en: new Date().toISOString() });
+}

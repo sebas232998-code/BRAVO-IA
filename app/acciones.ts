@@ -6,12 +6,15 @@ import {
   actualizarPedido,
   borrarPedido,
   configWhatsAppDe,
+  guardarCorreccionCiudad,
   guardarVinculo,
   obtenerPedido,
   registrarEvento,
 } from "@/lib/db";
 import { enviarConfirmacion, subirPedido } from "@/lib/flujo";
 import { normalizarTelefono } from "@/lib/telefono";
+import { seParecen } from "@/lib/ciudades";
+import { textoDropi } from "@/lib/textos";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").replace(/\s+/g, " ").trim();
 
@@ -56,6 +59,12 @@ export async function editarDatos(f: FormData) {
     ...(p.estado === "error" ? { estado: "confirmado" as const, confirmado_en: null, dropi_en_pausa: null } : {}),
   };
   await actualizarPedido(id, cambios);
+
+  // Dropi rechazó el pedido y el vendedor corrigió la ortografía de la ciudad: la app lo aprende.
+  if (p.estado === "error" && p.error_dropi && p.ciudad && cambios.ciudad && seParecen(p.ciudad, cambios.ciudad)) {
+    await guardarCorreccionCiudad(textoDropi(p.ciudad), cambios.ciudad, cambios.departamento);
+    await registrarEvento(id, "correccion_aprendida", { original: p.ciudad, ciudad: cambios.ciudad });
+  }
   await registrarEvento(id, "datos_editados", { antes: { telefono: p.telefono_original, ciudad: p.ciudad, direccion: p.direccion } });
   revalidatePath("/");
 }

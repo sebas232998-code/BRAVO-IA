@@ -27,3 +27,7 @@ App creada por dropshippers, para dropshippers: confirma pedidos por WhatsApp, r
 1. Supabase: correr `supabase/migrations/005_vencimiento_token.sql` y `006_seguimiento.sql`.
 2. En "Configurar WhatsApp", tocar "Crear plantillas de seguimiento en Meta" y esperar la aprobación.
 3. En "Piloto automático", prender "Seguimiento a quien no responde".
+
+## Bandeja de errores (Fase 1, paso 6)
+
+1. Supabase: correr `supabase/migrations/007_bandeja_errores.sql`.

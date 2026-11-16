@@ -1,4 +1,6 @@
 import type { Pedido } from "./tipos";
+import { textoDropi } from "./textos";
+import { limpiarCiudad } from "./ciudades";
 
 // API de Integraciones de Dropi.
 // Autenticación: encabezado "dropi-integration-key" con el token de la integración
@@ -28,19 +30,7 @@ export interface OrdenDropi {
   products: { id: number; price: number; quantity: number; variation_id?: number }[];
 }
 
-// Mayúsculas y sin tildes, como Dropi guarda ciudades y departamentos (MEDELLIN, BOGOTA).
-// La Ñ se respeta (NARIÑO).
-export function textoDropi(s: string): string {
-  return s
-    .toUpperCase()
-    .replace(/Ñ/g, "\u0000")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\u0000/g, "Ñ")
-    .replace(/[.,]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+export { textoDropi } from "./textos";
 
 // Shopify escribe los departamentos distinto a Dropi en algunos casos.
 const DEPARTAMENTOS_ESPECIALES: [RegExp, string][] = [
@@ -58,8 +48,8 @@ export function departamentoDropi(departamento: string | null, ciudad: string | 
   return d;
 }
 
-export function ciudadDropi(ciudad: string | null): string | null {
-  const c = textoDropi(ciudad ?? "");
+export function ciudadDropi(ciudad: string | null, departamento: string | null = null): string | null {
+  const c = limpiarCiudad(ciudad, departamento) ?? "";
   if (!c) return null;
   if (/^BOGOTA\b/.test(c)) return "BOGOTA";
   return c;
@@ -71,7 +61,7 @@ export class FaltaDato extends Error {}
 export function armarOrdenDropi(p: Pedido, vinculos: VinculoDropi[]): OrdenDropi {
   if (!p.telefono) throw new FaltaDato("El número de la clienta no es válido.");
   const state = departamentoDropi(p.departamento, p.ciudad);
-  const city = ciudadDropi(p.ciudad);
+  const city = ciudadDropi(p.ciudad, p.departamento);
   if (!city) throw new FaltaDato("Falta la ciudad.");
   if (!state) throw new FaltaDato("Falta el departamento.");
   if (!p.direccion) throw new FaltaDato("Falta la dirección.");

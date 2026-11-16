@@ -169,6 +169,9 @@ export function explicarErrorMeta(e?: { message?: string; error_user_msg?: strin
   if (e.code === 190) return "El token de WhatsApp venció o no es válido. Entra a Configurar WhatsApp y pega uno nuevo.";
   if (e.code === 131030) return "Ese número no está en la lista de números permitidos del número de prueba. Agrégalo en Meta → Paso 1. Probar → Destinatario.";
   if (e.code === 131047) return "Pasaron más de 24 horas desde el último mensaje de la clienta: hay que usar la plantilla aprobada.";
+  if (e.code === 131026) return "Este número no tiene WhatsApp (o no se le pudo entregar). Llama a la clienta o corrige el número.";
+  if (e.code === 131021) return "No se le puede escribir a ese número (es el mismo número de la tienda).";
+  if (e.code === 131049) return "Meta no entregó el mensaje para cuidar la experiencia de la clienta (recibió muchos mensajes de empresas). Intenta más tarde o llámala.";
   if (e.code === 132001) return "La plantilla no existe o todavía no está aprobada por Meta.";
   if (e.code === 100) return `Meta dice que falta o sobra un dato: ${e.error_user_msg ?? e.message ?? ""}`.trim();
   return e.error_user_msg ?? e.message ?? "Error de Meta.";
@@ -269,6 +272,12 @@ interface AvisoMeta {
     changes?: {
       value?: {
         metadata?: { phone_number_id?: string };
+        statuses?: {
+          id: string;
+          status: string;
+          recipient_id?: string;
+          errors?: { code?: number; title?: string; message?: string; error_data?: { details?: string } }[];
+        }[];
         messages?: {
           from: string;
           id: string;
@@ -299,6 +308,35 @@ export function extraerMensajes(aviso: AvisoMeta): MensajeEntrante[] {
           texto,
           tipo: m.type,
           fecha: m.timestamp ? new Date(Number(m.timestamp) * 1000).toISOString() : new Date().toISOString(),
+        });
+      }
+    }
+  }
+  return salida;
+}
+
+// Avisos de Meta sobre los mensajes que enviamos: entregado, leído o falló.
+export interface EstadoMensaje {
+  phone_number_id: string;
+  wa_id: string;
+  estado: string; // sent | delivered | read | failed
+  error: string | null;
+}
+
+export function extraerEstados(aviso: AvisoMeta): EstadoMensaje[] {
+  const salida: EstadoMensaje[] = [];
+  for (const entry of aviso.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      const v = change.value;
+      const numero = v?.metadata?.phone_number_id;
+      if (!numero) continue;
+      for (const st of v.statuses ?? []) {
+        const e = st.errors?.[0];
+        salida.push({
+          phone_number_id: numero,
+          wa_id: st.id,
+          estado: st.status,
+          error: st.status === "failed" ? explicarErrorMeta({ code: e?.code, message: e?.error_data?.details ?? e?.title ?? e?.message }) : null,
         });
       }
     }

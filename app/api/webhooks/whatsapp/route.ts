@@ -4,6 +4,7 @@ import {
   configPorNumero,
   existeVerifyToken,
   guardarMensaje,
+  marcarEstadoMensaje,
   pedidoAbiertoDe,
   registrarEvento,
 } from "@/lib/db";
@@ -15,6 +16,7 @@ import {
   esCortesia,
   esCorregirDatos,
   espera,
+  extraerEstados,
   extraerMensajes,
   firmaMetaValida,
   MENSAJE_CORREGIR,
@@ -39,6 +41,20 @@ export async function POST(req: Request) {
     aviso = JSON.parse(cuerpo);
   } catch {
     return NextResponse.json({ error: "json inválido" }, { status: 400 });
+  }
+
+  // Avisos de entrega: si un mensaje nuestro falló (por ejemplo, número sin WhatsApp), el pedido lo muestra.
+  for (const st of extraerEstados(aviso)) {
+    const c = await configPorNumero(st.phone_number_id);
+    if (!c) continue;
+    if (!firmaMetaValida(cuerpo, req.headers.get("x-hub-signature-256"), c.app_secret)) {
+      return NextResponse.json({ error: "firma inválida" }, { status: 401 });
+    }
+    const pedidoId = await marcarEstadoMensaje(st.wa_id, st.estado);
+    if (pedidoId && st.estado === "failed") {
+      await actualizarPedido(pedidoId, { error_whatsapp: st.error });
+      await registrarEvento(pedidoId, "whatsapp_no_entregado", { mensaje: st.error });
+    }
   }
 
   const mensajes = extraerMensajes(aviso);

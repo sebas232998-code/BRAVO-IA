@@ -31,12 +31,14 @@ type PedidoSeguimiento = Pick<Pedido, "estado" | "telefono"> & {
   ultima_respuesta_en?: string | null;
   seguimientos_enviados?: number;
   ultimo_seguimiento_en?: string | null;
+  error_whatsapp?: string | null;
 };
 
 // ¿Qué le toca a este pedido ahora?
 export function siguientePaso(p: PedidoSeguimiento, c: ConfigSeguimiento, ahora: Date): Paso {
   if (p.estado !== "por_confirmar" || !p.telefono || !p.confirmacion_enviada_en) return null;
   if (p.ultima_respuesta_en) return null; // la clienta ya escribió: lo atiende el vendedor
+  if (p.error_whatsapp) return null; // el último mensaje no le llegó (número sin WhatsApp, etc.): lo resuelve el vendedor
   const enviada = new Date(p.confirmacion_enviada_en).getTime();
   if (c.seguimiento_desde && enviada < new Date(c.seguimiento_desde).getTime()) return null; // pedido de antes de prenderlo
 
