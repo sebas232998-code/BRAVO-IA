@@ -15,6 +15,8 @@ import { calcularMetricas, comparacion, consejoConfirmacion, consejoEntrega, ran
 import { avisoMinimo, colorTasa, nivelEntrega } from "@/lib/tasas";
 import { guardarTasaMinima } from "./acciones";
 import { CirculoTasa } from "./circulo";
+import { Confeti } from "./confeti";
+import { contarLeyendas, semanas } from "@/lib/leyendas";
 
 export const dynamic = "force-dynamic";
 
@@ -135,6 +137,11 @@ export default async function Panel({
   const peores = (campo: "ciudad" | "transportadora" | "producto") => porGrupo(filtrar(delRango), campo).slice(0, 4);
   const hoy = new Date(Date.now() - 5 * 3_600_000).toISOString().slice(0, 10);
 
+  // Leyendas: semanas cerradas con 90 % o más (de la tienda escogida).
+  const historial = conectada && !ejemplo ? await ordenesDropiDesde(new Date(Date.now() - 400 * 86_400_000)) : [];
+  const leyendas = contarLeyendas(semanas(filtrar(historial)));
+  const ultima = leyendas.ultimaSemana;
+
   return (
     <main>
       <p><Link href="/" className="volver">← Pedidos</Link></p>
@@ -240,6 +247,26 @@ export default async function Panel({
               )}
             </div>
           </section>
+
+          {(leyendas.total > 0 || nivel?.leyenda) && (
+            <section className="pedido leyendas">
+              <div>
+                <b>🏆 Leyendas: {leyendas.esteMes} este mes · {leyendas.total} en total</b>
+                <div className="pedido-meta">Cada semana cerrada con 90 % o más de entrega (y 5 pedidos terminados o más).</div>
+              </div>
+              {nivel?.leyenda && entrega !== null && (
+                <Link href={`/leyenda?tasa=${entrega}&cuando=${encodeURIComponent(r.nombre)}`} className="boton-amarillo">
+                  Compartir mi Leyenda 🔥
+                </Link>
+              )}
+            </section>
+          )}
+          {ultima?.leyenda && ultima.tasa !== null && (
+            <Confeti
+              clave={`semana-${ultima.inicio}`}
+              mensaje={`¡Semana brava! 🔥 La semana pasada entregaste el ${ultima.tasa} % de tus pedidos.`}
+            />
+          )}
 
           <section className="pedido cifras">
             <Cifra valor={m.despachados} nombre="Despachados" />

@@ -362,3 +362,10 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - "Ya le escribí" marca la novedad (tabla `novedades_gestion`, solo el número del pedido).
 - Los datos de contacto se leen de Dropi al abrir la pantalla y no se guardan. La corrección o el nuevo intento se hacen en Dropi (no se sabe aún si la API lo permite).
 - Estado de Dropi en cada pedido de la app (16 nov 2026): se cruza por el número del pedido de Shopify (`shop_order_id`) o por el número de Dropi, también para los pedidos que subió la app de Dropi. Solo se muestra ("📦 Dropi: En reparto · SERVIENTREGA", con enlace a la novedad si tiene); no cambia el estado del pedido en la app.
+
+## Avance: Leyendas (16 nov 2026)
+
+- Una Leyenda es una semana (lunes a domingo, hora de Colombia) ya cerrada con tasa de entrega de 90 % o más y al menos 5 pedidos terminados, según los estados de Dropi (sin pruebas). Se cuentan por la tienda escogida en el panel.
+- Panel (Entregas): "🏆 Leyendas: X este mes · Y en total" y, si la tasa del rango está en Leyenda, botón "Compartir mi Leyenda 🔥".
+- `/leyenda`: imagen para historias (1080 × 1920, `/api/leyenda`) con el toro, "LEYENDA", el porcentaje, las fechas y la marca Bravo IA, sin datos de clientas ni plata. Botón para compartir (Instagram, TikTok, WhatsApp desde el celular) o descargar.
+- Confeti al abrir el panel cuando la semana pasada fue Leyenda ("¡Semana brava! 🔥 La semana pasada entregaste el X %"), máximo una vez por semana en cada celular.
