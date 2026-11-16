@@ -47,7 +47,7 @@ export function leerOrden(o: Record<string, unknown>): OrdenDropiLeida | null {
   const novedad = typeof o.novedad_servientrega === "string" && o.novedad_servientrega.trim() ? o.novedad_servientrega.trim() : null;
   return {
     id,
-    tienda: nombre(o.shop),
+    tienda: nombre(o.shop)?.toUpperCase() ?? null, // "toreva" y "TOREVA" son la misma
     estado: String(o.status ?? "").trim().toUpperCase() || "DESCONOCIDO",
     novedad,
     ciudad: nombre(o.city),

@@ -21,7 +21,7 @@ describe("estados de Dropi", () => {
   it("lee un pedido sin guardar datos personales", () => {
     const r = leerOrden({
       id: 96850798, status: "ENTREGADO", name: "Laura", phone: "3001234567", dir: "Cra 1", city: "CALI", state: "VALLE",
-      shop: { id: 1, name: "PETION" }, distribution_company: { id: 3, name: "SERVIENTREGA" }, total_order: 99900,
+      shop: { id: 1, name: "Petion" }, distribution_company: { id: 3, name: "SERVIENTREGA" }, total_order: 99900,
       shipping_amount: 15420.5, created_at: "2026-11-14T14:08:38", novedad_servientrega: null,
       orderdetails: [{ quantity: 2, product: { id: 2286474, name: "PROTECTOR DE SOFA", sale_price: "36000.00" } }],
     })!;
