@@ -145,3 +145,8 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 .pestana { flex: 1; text-align: center; padding: 8px 6px; border-radius: 999px; color: var(--suave); text-decoration: none; font-size: 14px; }
 .pestana-activa { background: var(--acento); color: #0b0e11; font-weight: 600; }
 .cifra-rescatadas b { color: var(--acento); }
+.minimo { flex-basis: 100%; border-top: 1px solid var(--linea); padding-top: 10px; font-size: 14px; color: var(--suave); }
+.minimo b { color: var(--texto); }
+.minimo-form { display: grid; gap: 8px; }
+.minimo-form label { display: grid; gap: 4px; font-size: 13px; }
+.lista-tasas { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }

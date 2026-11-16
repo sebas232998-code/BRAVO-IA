@@ -36,6 +36,8 @@ export interface Metricas {
   };
   entregados: number;
   devueltos: number;
+  despachados: number;
+  conNovedad: number;
 }
 
 // Rescatada por Bravo IA: confirmó después de un mensaje de seguimiento, con el descuento de rescate
@@ -76,6 +78,8 @@ export function calcularMetricas(pedidos: Pedido[], desde: Date, conIA: Set<stri
     },
     entregados,
     devueltos,
+    despachados,
+    conNovedad,
   };
 }
 

@@ -4,38 +4,65 @@ import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { formatoPesos } from "@/lib/mensajes";
 import { calcularMetricas, inicioPeriodo, type Periodo } from "@/lib/metricas";
 import { avisoMinimo, nivelEntrega, tasaMinima, tasaMinimaCalculada } from "@/lib/tasas";
-import { guardarNumeros } from "./acciones";
+import { guardarNumeros, guardarTasaMinima } from "./acciones";
 import { CirculoTasa } from "./circulo";
 
 export const dynamic = "force-dynamic";
 
 const PERIODOS: [Periodo, string][] = [["hoy", "Hoy"], ["semana", "Esta semana"], ["mes", "Este mes"]];
+const VISTAS = [["entregas", "Entregas"], ["confirmacion", "Confirmación"], ["numeros", "Mis números"]] as const;
+type Vista = (typeof VISTAS)[number][0];
 const FALTA_DROPI = "Llega cuando la app lea los estados de Dropi.";
 
-export default async function Panel({ searchParams }: { searchParams: Promise<{ periodo?: string; ejemplo?: string; tasa?: string; vista?: string }> }) {
+function Cifra({ valor, nombre, amarilla }: { valor: number | string; nombre: string; amarilla?: boolean }) {
+  return (
+    <div className={amarilla ? "cifra-rescatadas" : undefined}>
+      <b>{valor}</b>
+      <span>{nombre}</span>
+    </div>
+  );
+}
+
+function TasaPequena({ nombre, valor, explica, invertida }: { nombre: string; valor: number | null; explica: string; invertida?: boolean }) {
+  return (
+    <div className="fila-tasa">
+      <CirculoTasa tasa={valor} tamano={84} invertida={invertida} />
+      <b>{nombre}</b>
+      <div className="pedido-meta">{valor === null ? FALTA_DROPI : explica}</div>
+    </div>
+  );
+}
+
+export default async function Panel({
+  searchParams,
+}: {
+  searchParams: Promise<{ periodo?: string; ejemplo?: string; tasa?: string; vista?: string; cambiar?: string }>;
+}) {
   const q = await searchParams;
   const periodo: Periodo = (["hoy", "semana", "mes"] as const).find((x) => x === q.periodo) ?? "semana";
-  const conectada = baseConfigurada();
-  const pedidos = conectada ? await listarPedidos(2000) : PEDIDOS_EJEMPLO;
-  const conIA = conectada ? await pedidosConIA(pedidos.map((p) => p.id!).filter(Boolean)) : new Set<string>();
+  const vista: Vista = VISTAS.map(([v]) => v).find((v) => v === q.vista) ?? "entregas";
   const ejemplo = q.ejemplo === "1";
-  const vista = (["resumen", "tasas", "numeros"] as const).find((x) => x === q.vista) ?? "resumen";
-  // Arma el enlace conservando lo demás (período, ejemplo).
+  // Arma el enlace conservando lo demás (período, ejemplo, pestaña).
   const enlace = (cambios: Record<string, string | null>) => {
     const u = new URLSearchParams();
-    const todo = { periodo: q.periodo ?? null, ejemplo: q.ejemplo ?? null, tasa: q.tasa ?? null, vista: q.vista ?? null, ...cambios };
-    for (const [k, v] of Object.entries(todo)) if (v && !(k === "vista" && v === "resumen")) u.set(k, v);
+    const todo = { vista: q.vista ?? null, periodo: q.periodo ?? null, ejemplo: q.ejemplo ?? null, tasa: q.tasa ?? null, ...cambios };
+    for (const [k, v] of Object.entries(todo)) if (v && !(k === "vista" && v === "entregas")) u.set(k, v);
     const t = u.toString();
     return t ? `/panel?${t}` : "/panel";
   };
+
+  const conectada = baseConfigurada();
+  const pedidos = conectada ? await listarPedidos(2000) : PEDIDOS_EJEMPLO;
+  const conIA = conectada ? await pedidosConIA(pedidos.map((p) => p.id!).filter(Boolean)) : new Set<string>();
   const m = calcularMetricas(pedidos, inicioPeriodo(periodo), conIA);
   // "Ver cómo se verá": números de ejemplo (no son tuyos) para mostrar el diseño.
   if (ejemplo) {
     const t = Math.min(100, Math.max(0, Number(q.tasa ?? 91) || 91));
+    const entregados = Math.round(t * 0.8);
     Object.assign(m, {
-      rescatadas: 7, plataRescatada: 699300, recibidos: 120, confirmados: 96, porConfirmar: 4, sinRespuesta: 20, enDropi: 96,
-      entregados: Math.round(t * 0.8), devueltos: 80 - Math.round(t * 0.8),
-      tasas: { confirmacion: 83, entrega: t, novedad: 12, rescate: 64, realVenta: Math.round((t * 0.8 * 100) / 120) },
+      rescatadas: 7, plataRescatada: 699300, recibidos: 120, confirmados: 96, porConfirmar: 4, sinRespuesta: 20,
+      enDropi: 96, despachados: 96, conNovedad: 12, entregados, devueltos: 80 - entregados,
+      tasas: { confirmacion: 83, entrega: t, novedad: 12, rescate: 64, realVenta: Math.round((entregados * 100) / 120) },
     });
   }
 
@@ -47,19 +74,13 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
     return { ...p, datos, minimo: tasaMinima(datos), sugerido: tasaMinimaCalculada(datos) };
   });
   // Con un solo producto, su mínimo es la rayita de la tasa de entrega general.
-  const minimoGeneral = ejemplo ? 44 : filas.length === 1 ? filas[0].minimo.valor : null;
-  const conoceCPA = filas.length === 1 && filas[0].datos.cpa !== null;
+  const unico = filas.length === 1 ? filas[0] : null;
+  const minimoGeneral = ejemplo ? 44 : unico?.minimo.valor ?? null;
+  const conoceCPA = Boolean(unico && unico.datos.cpa !== null);
 
   const entrega = m.tasas.entrega;
   const nivel = entrega === null ? null : nivelEntrega(entrega, minimoGeneral, conoceCPA);
-  const aviso = entrega === null ? null : avisoMinimo(entrega, minimoGeneral, ejemplo ? "este producto" : filas[0]?.producto ?? "este producto");
-
-  const tasas: { nombre: string; valor: number | null; explica: string; falta: string; invertida?: boolean }[] = [
-    { nombre: "Tasa de confirmación", valor: m.tasas.confirmacion, explica: "Cuántas clientas confirman de verdad.", falta: "Todavía no hay pedidos decididos en este período." },
-    { nombre: "Tasa de novedad", valor: m.tasas.novedad, explica: "Cuántos pedidos despachados tienen problemas en el camino.", falta: FALTA_DROPI, invertida: true },
-    { nombre: "Tasa de rescate", valor: m.tasas.rescate, explica: "Cuántas novedades salva Bravo IA.", falta: FALTA_DROPI },
-    { nombre: "Tasa real de venta", valor: m.tasas.realVenta, explica: "De cada 100 pedidos, cuántos se vuelven plata.", falta: FALTA_DROPI },
-  ];
+  const aviso = entrega === null ? null : avisoMinimo(entrega, minimoGeneral, ejemplo ? "este producto" : unico?.producto ?? "este producto");
 
   return (
     <main>
@@ -67,9 +88,10 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
       <h1>
         Tu <span>panel</span>
       </h1>
+
       <div className="pestanas">
-        {([["resumen", "Resumen"], ["tasas", "Tasas"], ["numeros", "Mis números"]] as const).map(([v, nombre]) => (
-          <Link key={v} href={enlace({ vista: v })} className={`pestana${v === vista ? " pestana-activa" : ""}`}>{nombre}</Link>
+        {VISTAS.map(([v, nombre]) => (
+          <Link key={v} href={enlace({ vista: v, cambiar: null })} className={`pestana${v === vista ? " pestana-activa" : ""}`}>{nombre}</Link>
         ))}
       </div>
 
@@ -83,73 +105,121 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
 
       {ejemplo ? (
         <div className="aviso">
-          Estos números son de EJEMPLO, para que veas cómo se verá. Prueba otras tasas:{" "}
+          Estos números son de EJEMPLO, para que veas cómo se verá. Prueba otras tasas de entrega:{" "}
           {[91, 87, 75, 62, 48, 40].map((t) => (
-            <Link key={t} href={enlace({ ejemplo: "1", tasa: String(t) })} className="enlace">{t}% </Link>
+            <Link key={t} href={enlace({ ejemplo: "1", tasa: String(t), vista: "entregas" })} className="enlace">{t}% </Link>
           ))}
           · <Link href={enlace({ ejemplo: null, tasa: null })} className="enlace">Volver a mis números</Link>
         </div>
       ) : (
-        vista !== "numeros" && <p className="pedido-meta"><Link href={enlace({ ejemplo: "1" })} className="enlace">Ver cómo se verá con datos →</Link></p>
+        vista !== "numeros" && (
+          <p className="pedido-meta"><Link href={enlace({ ejemplo: "1" })} className="enlace">Ver cómo se verá con datos →</Link></p>
+        )
       )}
 
-      {vista === "resumen" && (<>
-
-      <section className={`pedido tasa-principal${nivel?.leyenda ? " leyenda" : ""}`}>
-        <CirculoTasa tasa={entrega} minimo={minimoGeneral} leyenda={nivel?.leyenda} tamano={150} />
-        <div>
-          <div className="pedido-nombre">Tasa de entrega</div>
-          {nivel && <div style={{ color: nivel.color, fontWeight: 700 }}>{nivel.nombre}</div>}
-          <div className="pedido-meta">
-            {entrega === null
-              ? FALTA_DROPI
-              : `De cada 100 pedidos despachados, ${entrega} se entregan (${m.entregados} entregados, ${m.devueltos} devueltos).`}
-          </div>
-          {minimoGeneral !== null && (
-            <div className="pedido-meta">
-              ▏ Tu mínimo para no perder: <b>{minimoGeneral} %</b>
-              {ejemplo ? " (ejemplo)" : filas[0]?.minimo.propia ? " (lo escribiste tú)" : " (según tus costos)"}
+      {vista === "entregas" && (
+        <>
+          <section className={`pedido tasa-principal${nivel?.leyenda ? " leyenda" : ""}`}>
+            <CirculoTasa tasa={entrega} minimo={minimoGeneral} leyenda={nivel?.leyenda} tamano={150} />
+            <div>
+              <div className="pedido-nombre">Tasa de entrega</div>
+              {nivel && <div style={{ color: nivel.color, fontWeight: 700 }}>{nivel.nombre}</div>}
+              <div className="pedido-meta">
+                {entrega === null ? FALTA_DROPI : `De cada 100 pedidos despachados, ${entrega} se entregan.`}
+              </div>
+              {aviso && <div className="problema">{aviso}</div>}
             </div>
-          )}
-          {aviso && <div className="problema">{aviso}</div>}
-        </div>
-      </section>
 
-      <section className="pedido cifras">
-        <div><b>{m.recibidos}</b><span>Recibidos</span></div>
-        <div><b>{m.confirmados}</b><span>Confirmados</span></div>
-        <div><b>{m.porConfirmar}</b><span>Por confirmar</span></div>
-        <div><b>{m.sinRespuesta}</b><span>Sin respuesta o cancelados</span></div>
-        <div><b>{m.enDropi}</b><span>Subidos a Dropi</span></div>
-        <div className="cifra-rescatadas">
-          <b>{m.rescatadas}</b>
-          <span>Rescatadas por Bravo IA{m.rescatadas > 0 ? ` · ${formatoPesos(m.plataRescatada)}` : ""}</span>
-        </div>
-      </section>
-      </>)}
+            {/* Tu tasa mínima, junto a la rayita: se cambia aquí mismo. */}
+            <div className="minimo">
+              {q.cambiar === "1" && unico && !ejemplo ? (
+                <form action={guardarTasaMinima} className="minimo-form">
+                  <input type="hidden" name="tienda" value={unico.tienda_dominio} />
+                  <input type="hidden" name="producto" value={String(unico.shopify_product_id)} />
+                  <label>
+                    Tu tasa mínima para no perder (%)
+                    <input name="tasa_minima" inputMode="numeric" defaultValue={unico.datos.tasa_minima ?? ""} placeholder={unico.sugerido !== null ? `Según tus costos: ${unico.sugerido}` : "Ej. 45"} />
+                  </label>
+                  <div className="botones">
+                    <button type="submit" className="principal">Guardar</button>
+                    <Link href={enlace({ cambiar: null })} className="enlace">Cancelar</Link>
+                  </div>
+                  <span className="pedido-meta">Déjalo vacío para que la app la calcule con tus costos.</span>
+                </form>
+              ) : (
+                <>
+                  ▏ Tu tasa mínima:{" "}
+                  <b>{minimoGeneral === null ? "sin definir" : `${minimoGeneral} %`}</b>
+                  {ejemplo
+                    ? " (ejemplo)"
+                    : unico?.minimo.propia
+                      ? " (la escribiste tú)"
+                      : minimoGeneral !== null
+                        ? " (según tus costos)"
+                        : ""}
+                  {!ejemplo && unico && (
+                    <> · <Link href={enlace({ cambiar: "1" })} className="enlace">Cambiar</Link></>
+                  )}
+                  {!ejemplo && !unico && filas.length > 1 && (
+                    <> · <Link href={enlace({ vista: "numeros" })} className="enlace">Ponla por producto</Link></>
+                  )}
+                  {!ejemplo && unico && minimoGeneral === null && (
+                    <div className="pedido-meta">Escríbela o llena tus costos en “Mis números” para que la app la calcule.</div>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
 
-      {vista === "tasas" && (
-      <section className="pedido">
-        <div className="pedido-nombre">Tasas de operación</div>
-        <div className="lista-tasas">
-          {tasas.map((t) => (
-            <div key={t.nombre} className="fila-tasa">
-              <CirculoTasa tasa={t.valor} tamano={84} invertida={t.invertida} />
-              <div>
-                <b>{t.nombre}</b>
-                <div className="pedido-meta">{t.valor === null ? t.falta : t.explica}</div>
+          <section className="pedido cifras">
+            <Cifra valor={m.despachados} nombre="Despachados" />
+            <Cifra valor={m.entregados} nombre="Entregados" />
+            <Cifra valor={m.devueltos} nombre="Devueltos (no entregados)" />
+            <Cifra valor={m.conNovedad} nombre="Con novedad" />
+          </section>
+
+          <section className="pedido">
+            <div className="lista-tasas">
+              <TasaPequena nombre="Tasa de novedad" valor={m.tasas.novedad} invertida explica="Cuántos despachados tienen problemas en el camino." />
+              <TasaPequena nombre="Tasa de rescate" valor={m.tasas.rescate} explica="Cuántas novedades salva Bravo IA." />
+              <TasaPequena nombre="Tasa real de venta" valor={m.tasas.realVenta} explica="De cada 100 pedidos, cuántos se vuelven plata." />
+            </div>
+          </section>
+        </>
+      )}
+
+      {vista === "confirmacion" && (
+        <>
+          <section className="pedido tasa-principal">
+            <CirculoTasa tasa={m.tasas.confirmacion} tamano={150} />
+            <div>
+              <div className="pedido-nombre">Tasa de confirmación</div>
+              <div className="pedido-meta">
+                {m.tasas.confirmacion === null
+                  ? "Todavía no hay pedidos decididos en este período."
+                  : `De cada 100 pedidos, ${m.tasas.confirmacion} clientas confirman de verdad.`}
               </div>
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
+
+          <section className="pedido cifras">
+            <Cifra valor={m.recibidos} nombre="Recibidos" />
+            <Cifra valor={m.porConfirmar} nombre="Por confirmar" />
+            <Cifra valor={m.confirmados} nombre="Confirmados" />
+            <Cifra valor={m.sinRespuesta} nombre="No confirmados (sin respuesta o cancelados)" />
+            <Cifra
+              valor={m.rescatadas}
+              nombre={`Rescatadas por Bravo IA${m.rescatadas > 0 ? ` · ${formatoPesos(m.plataRescatada)}` : ""}`}
+              amarilla
+            />
+          </section>
+          <p className="pedido-meta">
+            Rescatadas: confirmaron gracias al seguimiento, al descuento de rescate o a la IA.
+          </p>
+        </>
       )}
 
-
-
-      {vista === "numeros" && filas.length === 0 && (
-        <p className="subtitulo">Todavía no hay productos en el catálogo.</p>
-      )}
+      {vista === "numeros" && filas.length === 0 && <p className="subtitulo">Todavía no hay productos en el catálogo.</p>}
       {vista === "numeros" && filas.length > 0 && (
         <section className="pedido">
           <div className="pedido-nombre">Tus números por producto</div>
