@@ -24,3 +24,26 @@ describe("panel", () => {
     expect(semaforo(50).frase).toBe("Hay que revisar");
   });
 });
+
+import { comparacion, consejoConfirmacion, consejoEntrega, periodoAnterior } from "../lib/metricas";
+
+describe("comparación y consejos", () => {
+  it("compara con el período anterior", () => {
+    expect(comparacion(91, 88, "semana")).toEqual({ texto: "▲ 3 puntos vs la semana pasada", bueno: true });
+    expect(comparacion(12, 15, "mes", true)).toEqual({ texto: "▼ 3 puntos vs el mes pasado", bueno: true });
+    expect(comparacion(80, 80, "hoy")?.texto).toBe("Igual que ayer");
+    expect(comparacion(80, null, "hoy")).toBeNull();
+  });
+  it("la semana pasada empieza 7 días antes", () => {
+    const p = periodoAnterior("semana", new Date("2026-11-18T15:00:00Z"));
+    expect(p.desde.toISOString()).toBe("2026-11-09T05:00:00.000Z");
+    expect(p.hasta.toISOString()).toBe("2026-11-16T05:00:00.000Z");
+    expect(periodoAnterior("mes", new Date("2026-11-18T15:00:00Z")).desde.toISOString()).toBe("2026-10-01T05:00:00.000Z");
+  });
+  it("consejos según la zona", () => {
+    expect(consejoEntrega(92, 44, 0)).toContain("Semana brava");
+    expect(consejoEntrega(48, 44, 12)).toContain("las 12 novedades abiertas");
+    expect(consejoEntrega(null, 44, 3)).toBeNull();
+    expect(consejoConfirmacion(60, 5, false)).toContain("Prende el seguimiento");
+  });
+});

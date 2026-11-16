@@ -1,8 +1,23 @@
 import Link from "next/link";
-import { baseConfigurada, listarPedidos, numerosProductos, pedidosConIA, productosDelCatalogo } from "@/lib/db";
+import {
+  baseConfigurada,
+  listarPedidos,
+  numerosProductos,
+  pedidosConIA,
+  productosDelCatalogo,
+  tiendasConInterruptores,
+} from "@/lib/db";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { formatoPesos } from "@/lib/mensajes";
-import { calcularMetricas, inicioPeriodo, type Periodo } from "@/lib/metricas";
+import {
+  calcularMetricas,
+  comparacion,
+  consejoConfirmacion,
+  consejoEntrega,
+  inicioPeriodo,
+  periodoAnterior,
+  type Periodo,
+} from "@/lib/metricas";
 import { avisoMinimo, nivelEntrega, tasaMinima, tasaMinimaCalculada } from "@/lib/tasas";
 import { guardarNumeros, guardarTasaMinima } from "./acciones";
 import { CirculoTasa } from "./circulo";
@@ -21,6 +36,10 @@ function Cifra({ valor, nombre, amarilla }: { valor: number | string; nombre: st
       <span>{nombre}</span>
     </div>
   );
+}
+
+function Comparacion({ texto, bueno }: { texto: string; bueno: boolean | null }) {
+  return <div className={`comparacion ${bueno === null ? "" : bueno ? "sube" : "baja"}`}>{texto}</div>;
 }
 
 function TasaPequena({ nombre, valor, explica, invertida }: { nombre: string; valor: number | null; explica: string; invertida?: boolean }) {
@@ -55,6 +74,9 @@ export default async function Panel({
   const pedidos = conectada ? await listarPedidos(2000) : PEDIDOS_EJEMPLO;
   const conIA = conectada ? await pedidosConIA(pedidos.map((p) => p.id!).filter(Boolean)) : new Set<string>();
   const m = calcularMetricas(pedidos, inicioPeriodo(periodo), conIA);
+  const anterior = periodoAnterior(periodo);
+  const antes = calcularMetricas(pedidos, anterior.desde, conIA, anterior.hasta);
+  const seguimientoPrendido = conectada ? (await tiendasConInterruptores()).some((t) => t.auto_seguimiento) : false;
   // "Ver cómo se verá": números de ejemplo (no son tuyos) para mostrar el diseño.
   if (ejemplo) {
     const t = Math.min(100, Math.max(0, Number(q.tasa ?? 91) || 91));
@@ -64,6 +86,7 @@ export default async function Panel({
       enDropi: 96, despachados: 96, conNovedad: 12, entregados, devueltos: 80 - entregados,
       tasas: { confirmacion: 83, entrega: t, novedad: 12, rescate: 64, realVenta: Math.round((entregados * 100) / 120) },
     });
+    antes.tasas = { ...antes.tasas, entrega: t - 3, confirmacion: 80 };
   }
 
   const productos = conectada ? await productosDelCatalogo() : [];
@@ -80,6 +103,10 @@ export default async function Panel({
 
   const entrega = m.tasas.entrega;
   const nivel = entrega === null ? null : nivelEntrega(entrega, minimoGeneral, conoceCPA);
+  const compEntrega = comparacion(entrega, antes.tasas.entrega, periodo);
+  const compConfirmacion = comparacion(m.tasas.confirmacion, antes.tasas.confirmacion, periodo);
+  const consejoE = consejoEntrega(entrega, minimoGeneral, m.conNovedad);
+  const consejoC = consejoConfirmacion(m.tasas.confirmacion, m.porConfirmar, seguimientoPrendido);
   const aviso = entrega === null ? null : avisoMinimo(entrega, minimoGeneral, ejemplo ? "este producto" : unico?.producto ?? "este producto");
 
   return (
@@ -127,7 +154,9 @@ export default async function Panel({
               <div className="pedido-meta">
                 {entrega === null ? FALTA_DROPI : `De cada 100 pedidos despachados, ${entrega} se entregan.`}
               </div>
+              {compEntrega && <Comparacion {...compEntrega} />}
               {aviso && <div className="problema">{aviso}</div>}
+              {consejoE && <div className="consejo">💡 {consejoE}</div>}
             </div>
 
             {/* Tu tasa mínima, junto a la rayita: se cambia aquí mismo. */}
@@ -137,7 +166,7 @@ export default async function Panel({
                   <input type="hidden" name="tienda" value={unico.tienda_dominio} />
                   <input type="hidden" name="producto" value={String(unico.shopify_product_id)} />
                   <label>
-                    Tu tasa mínima para no perder (%)
+                    Tu tasa mínima de efectividad para no perder dinero (%)
                     <input name="tasa_minima" inputMode="numeric" defaultValue={unico.datos.tasa_minima ?? ""} placeholder={unico.sugerido !== null ? `Según tus costos: ${unico.sugerido}` : "Ej. 45"} />
                   </label>
                   <div className="botones">
@@ -146,28 +175,23 @@ export default async function Panel({
                   </div>
                   <span className="pedido-meta">Déjalo vacío para que la app la calcule con tus costos.</span>
                 </form>
-              ) : (
+              ) : minimoGeneral === null && !ejemplo && unico ? (
+                <Link href={enlace({ cambiar: "1" })} className="boton-amarillo">
+                  + Agrega tu tasa mínima de efectividad para no perder dinero
+                </Link>
+              ) : minimoGeneral === null && !ejemplo && filas.length > 1 ? (
+                <Link href={enlace({ vista: "numeros" })} className="boton-amarillo">
+                  + Agrega tu tasa mínima de efectividad por producto
+                </Link>
+              ) : minimoGeneral !== null ? (
                 <>
-                  ▏ Tu tasa mínima:{" "}
-                  <b>{minimoGeneral === null ? "sin definir" : `${minimoGeneral} %`}</b>
-                  {ejemplo
-                    ? " (ejemplo)"
-                    : unico?.minimo.propia
-                      ? " (la escribiste tú)"
-                      : minimoGeneral !== null
-                        ? " (según tus costos)"
-                        : ""}
+                  ▏ Tu tasa mínima para no perder dinero: <b>{minimoGeneral} %</b>
+                  {ejemplo ? " (ejemplo)" : unico?.minimo.propia ? " (la escribiste tú)" : " (según tus costos)"}
                   {!ejemplo && unico && (
                     <> · <Link href={enlace({ cambiar: "1" })} className="enlace">Cambiar</Link></>
                   )}
-                  {!ejemplo && !unico && filas.length > 1 && (
-                    <> · <Link href={enlace({ vista: "numeros" })} className="enlace">Ponla por producto</Link></>
-                  )}
-                  {!ejemplo && unico && minimoGeneral === null && (
-                    <div className="pedido-meta">Escríbela o llena tus costos en “Mis números” para que la app la calcule.</div>
-                  )}
                 </>
-              )}
+              ) : null}
             </div>
           </section>
 
@@ -199,6 +223,8 @@ export default async function Panel({
                   ? "Todavía no hay pedidos decididos en este período."
                   : `De cada 100 pedidos, ${m.tasas.confirmacion} clientas confirman de verdad.`}
               </div>
+              {compConfirmacion && <Comparacion {...compConfirmacion} />}
+              {consejoC && <div className="consejo">💡 {consejoC}</div>}
             </div>
           </section>
 

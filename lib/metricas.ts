@@ -47,9 +47,11 @@ export function esRescatada(p: Pedido, conIA: Set<string>): boolean {
   return (p.seguimientos_enviados ?? 0) > 0 || Boolean(p.descuento_aplicado) || conIA.has(p.id ?? "");
 }
 
-export function calcularMetricas(pedidos: Pedido[], desde: Date, conIA: Set<string> = new Set()): Metricas {
+export function calcularMetricas(pedidos: Pedido[], desde: Date, conIA: Set<string> = new Set(), hasta: Date | null = null): Metricas {
   // Los archivados los atendió el vendedor por fuera: no cuentan.
-  const del = pedidos.filter((p) => p.estado !== "archivado" && new Date(p.creado_en) >= desde);
+  const del = pedidos.filter(
+    (p) => p.estado !== "archivado" && new Date(p.creado_en) >= desde && (!hasta || new Date(p.creado_en) < hasta),
+  );
   const confirmados = del.filter((p) => CONFIRMADOS.has(p.estado) || (p.estado === "error" && p.error_dropi));
   const sinRespuesta = del.filter((p) => p.estado === "sin_respuesta" || p.estado === "cancelado");
   // La tasa se mide sobre los que ya se decidieron (confirmaron o no respondieron / cancelaron).
@@ -90,4 +92,43 @@ export function semaforo(tasa: number): { color: string; frase: string } {
   if (tasa >= 70) return { color: "#f0b90b", frase: "Bien, pero ojo" };
   if (tasa >= 60) return { color: "#ff8c42", frase: "En riesgo" };
   return { color: "#ff6b5e", frase: "Hay que revisar" };
+}
+
+// El período anterior del mismo tamaño (ayer, la semana pasada, el mes pasado).
+export function periodoAnterior(periodo: Periodo, ahora = new Date()): { desde: Date; hasta: Date } {
+  const hasta = inicioPeriodo(periodo, ahora);
+  if (periodo === "hoy") return { desde: new Date(hasta.getTime() - 86_400_000), hasta };
+  if (periodo === "semana") return { desde: new Date(hasta.getTime() - 7 * 86_400_000), hasta };
+  return { desde: inicioPeriodo("mes", new Date(hasta.getTime() - 86_400_000)), hasta };
+}
+
+const NOMBRE_ANTERIOR: Record<Periodo, string> = { hoy: "ayer", semana: "la semana pasada", mes: "el mes pasado" };
+
+// "▲ 3 puntos vs la semana pasada"
+export function comparacion(actual: number | null, antes: number | null, periodo: Periodo, menosEsMejor = false) {
+  if (actual === null || antes === null) return null;
+  const d = actual - antes;
+  const cuando = NOMBRE_ANTERIOR[periodo];
+  if (d === 0) return { texto: `Igual que ${cuando}`, bueno: null as boolean | null };
+  const puntos = Math.abs(d) === 1 ? "1 punto" : `${Math.abs(d)} puntos`;
+  return { texto: `${d > 0 ? "▲" : "▼"} ${puntos} vs ${cuando}`, bueno: menosEsMejor ? d < 0 : d > 0 };
+}
+
+// Qué hacer, en una línea, según cómo va la tasa de entrega.
+export function consejoEntrega(tasa: number | null, minimo: number | null, conNovedad: number): string | null {
+  if (tasa === null) return null;
+  const novedades = conNovedad > 0 ? `Atiende rápido ${conNovedad === 1 ? "la novedad abierta" : `las ${conNovedad} novedades abiertas`}: cada una que salves sube tu tasa.` : "";
+  if (tasa >= 90) return "¡Semana brava! 🔥 Sigue así.";
+  if (tasa >= 85) return "Vas muy bien. Sigue confirmando bien los datos antes de despachar.";
+  if (minimo !== null && tasa < minimo) return `${novedades || "Revisa qué ciudad o transportadora te está devolviendo más."} Mientras tanto, cada devolución te cuesta el flete.`.trim();
+  if (minimo !== null && tasa - minimo <= 10) return novedades || "Revisa qué ciudad o transportadora te está devolviendo más.";
+  return novedades || "Para subirla: confirma bien la dirección y atiende las novedades el mismo día.";
+}
+
+// Qué hacer, en una línea, según cómo va la confirmación.
+export function consejoConfirmacion(tasa: number | null, porConfirmar: number, seguimientoPrendido: boolean): string | null {
+  if (tasa === null) return porConfirmar > 0 ? `Tienes ${porConfirmar} por confirmar.` : null;
+  if (tasa >= 85) return "Muy bien: casi todas tus clientas confirman.";
+  if (!seguimientoPrendido) return "Prende el seguimiento a quien no responde (Piloto automático) para rescatar más pedidos.";
+  return porConfirmar > 0 ? `Tienes ${porConfirmar} por confirmar: el seguimiento les va a escribir solo.` : "El seguimiento está prendido y rescatando pedidos.";
 }
