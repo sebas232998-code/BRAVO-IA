@@ -33,12 +33,13 @@ export async function guardarTasaMinima(f: FormData) {
   if (!tienda || !producto) return;
   const actual = (await numerosProductos()).find((x) => x.tienda_dominio === tienda && x.shopify_product_id === producto);
   const minima = numero(f, "tasa_minima");
+  // Si viene el costo o el CPA desde la misma tarjeta, también se guardan (la app calcula el mínimo con ellos).
   await guardarNumerosProducto({
     tienda_dominio: tienda,
     shopify_product_id: producto,
-    costo: actual?.costo ?? null,
+    costo: f.has("costo") ? numero(f, "costo") : actual?.costo ?? null,
     flete: actual?.flete ?? null,
-    cpa: actual?.cpa ?? null,
+    cpa: f.has("cpa") ? numero(f, "cpa") : actual?.cpa ?? null,
     tasa_minima: minima === null ? null : Math.min(100, minima),
   });
   revalidatePath("/panel");

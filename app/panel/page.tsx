@@ -157,7 +157,7 @@ export default async function Panel({
   const nivel = entrega === null ? null : nivelEntrega(entrega, minimoGeneral, conoceCPA);
   const compEntrega = comparacion(entrega, antes.tasas.entrega, periodo);
   const compConfirmacion = comparacion(m.tasas.confirmacion, antes.tasas.confirmacion, periodo);
-  const consejoE = consejoEntrega(entrega, minimoGeneral, m.conNovedad);
+  const consejoE = consejoEntrega(entrega, minimoGeneral, m.conNovedad, periodo);
   const consejoC = consejoConfirmacion(m.tasas.confirmacion, m.porConfirmar, seguimientoPrendido);
   const aviso = entrega === null ? null : avisoMinimo(entrega, minimoGeneral, ejemplo ? "este producto" : unico?.producto ?? "este producto");
 
@@ -231,13 +231,26 @@ export default async function Panel({
                   <input type="hidden" name="producto" value={String(unico.shopify_product_id)} />
                   <label>
                     Tu tasa mínima de efectividad para no perder dinero (%)
-                    <input name="tasa_minima" inputMode="numeric" defaultValue={unico.datos.tasa_minima ?? ""} placeholder={unico.sugerido !== null ? `Según tus costos: ${unico.sugerido}` : "Ej. 45"} />
+                    <input name="tasa_minima" inputMode="numeric" defaultValue={unico.n?.tasa_minima ?? ""} placeholder={unico.sugerido !== null ? `Según tus costos: ${unico.sugerido}` : "Ej. 45"} />
                   </label>
+                  <span className="pedido-meta">
+                    O déjala vacía y que la app la calcule
+                    {unico.deDropi ? ` con tu venta (${formatoPesos(unico.deDropi.venta)}) y tu flete (${formatoPesos(unico.deDropi.flete ?? 0)}) reales de Dropi` : ""}:
+                  </span>
+                  <div className="numeros">
+                    <label>
+                      Costo del proveedor por pedido
+                      <input name="costo" inputMode="numeric" defaultValue={unico.n?.costo ?? ""} placeholder="$" />
+                    </label>
+                    <label>
+                      CPA (publicidad, si lo sabes)
+                      <input name="cpa" inputMode="numeric" defaultValue={unico.n?.cpa ?? ""} placeholder="$" />
+                    </label>
+                  </div>
                   <div className="botones">
                     <button type="submit" className="principal">Guardar</button>
                     <Link href={enlace({ cambiar: null })} className="enlace">Cancelar</Link>
                   </div>
-                  <span className="pedido-meta">Déjalo vacío para que la app la calcule con tus costos.</span>
                 </form>
               ) : minimoGeneral === null && !ejemplo && unico ? (
                 <Link href={enlace({ cambiar: "1" })} className="boton-amarillo">

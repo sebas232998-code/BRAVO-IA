@@ -115,10 +115,12 @@ export function comparacion(actual: number | null, antes: number | null, periodo
 }
 
 // Qué hacer, en una línea, según cómo va la tasa de entrega.
-export function consejoEntrega(tasa: number | null, minimo: number | null, conNovedad: number): string | null {
+const BRAVO: Record<Periodo, string> = { hoy: "¡Día bravo!", semana: "¡Semana brava!", mes: "¡Mes bravo!" };
+
+export function consejoEntrega(tasa: number | null, minimo: number | null, conNovedad: number, periodo: Periodo = "semana"): string | null {
   if (tasa === null) return null;
   const novedades = conNovedad > 0 ? `Atiende rápido ${conNovedad === 1 ? "la novedad abierta" : `las ${conNovedad} novedades abiertas`}: cada una que salves sube tu tasa.` : "";
-  if (tasa >= 90) return "¡Semana brava! 🔥 Sigue así.";
+  if (tasa >= 90) return `${BRAVO[periodo]} 🔥 Sigue así.`;
   if (tasa >= 85) return "Vas muy bien. Sigue confirmando bien los datos antes de despachar.";
   if (minimo !== null && tasa < minimo) return `${novedades || "Revisa qué ciudad o transportadora te está devolviendo más."} Mientras tanto, cada devolución te cuesta el flete.`.trim();
   if (minimo !== null && tasa - minimo <= 10) return novedades || "Revisa qué ciudad o transportadora te está devolviendo más.";
