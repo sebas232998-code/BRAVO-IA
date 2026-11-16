@@ -308,7 +308,7 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 
 ## Avance: pedidos atendidos por fuera y pestañas (16 nov 2026)
 
-- El panel de pedidos tiene tres pestañas: "Por atender" (por confirmar, confirmado, con error, novedad), "Enviados y cerrados" (en Dropi, entregado, devuelto, cancelado, sin respuesta) y "Archivados".
-- Botón "Ya lo atendí por mi cuenta 📁": el vendedor lo toca cuando ya habló con la clienta por fuera. El pedido pasa a "Archivados" y la app no le escribe nunca (ni confirmación, ni seguimiento, ni IA). "Devolver a pendientes" lo regresa.
+- El panel de pedidos tiene una pestaña por estado con su número: "Por confirmar" y "Confirmados" (siempre visibles), y "En Dropi", "Con error", "Sin respuesta", "Entregados y cancelados" y "Archivados" (solo si tienen pedidos).
+- Botón "Ya lo atendí por mi cuenta 📁": el vendedor lo toca cuando ya habló con la clienta por fuera. El pedido pasa a "Archivados" y la app no le escribe nunca (ni confirmación, ni seguimiento, ni IA). "Devolver a Por confirmar" lo regresa.
 - Si la confirmación ya se envió, el botón de reenviar queda escondido detrás de "¿Reenviar?" para no tocarlo por error.
 - Los 9 pedidos que había antes del 16 nov los atendió Sebastián por fuera: la app no los toca; él decide si los archiva.

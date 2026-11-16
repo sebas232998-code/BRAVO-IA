@@ -48,7 +48,7 @@ export default async function Inicio({
   const problemas = (p: Pedido) => problemasDe(p, vinculos[p.tienda_dominio] ?? []);
   const conProblemas = todos.filter((p) => problemas(p).length > 0);
   const verErrores = q.ver === "errores";
-  const pestana: Pestana = q.pestana && q.pestana in PESTANAS ? (q.pestana as Pestana) : "pendientes";
+  const pestana: Pestana = q.pestana && q.pestana in PESTANAS ? (q.pestana as Pestana) : "por_confirmar";
   const enPestana = (p: Pedido, t: Pestana) => (PESTANAS[t].estados as readonly Estado[]).includes(p.estado);
   const pedidos = verErrores ? conProblemas : todos.filter((p) => enPestana(p, pestana));
   const configs = conectada ? await configsWhatsApp() : [];
@@ -114,8 +114,8 @@ export default async function Inicio({
 
       {!verErrores && (
         <div className="filtros">
-          {conteo.map(([t, n]) => (
-            <Link key={t} href={t === "pendientes" ? "/" : `/?pestana=${t}`} className={`filtro${t === pestana ? " filtro-activo" : ""}`}>
+          {conteo.filter(([t, n]) => n > 0 || PESTANAS[t].siempre || t === pestana).map(([t, n]) => (
+            <Link key={t} href={t === "por_confirmar" ? "/" : `/?pestana=${t}`} className={`filtro${t === pestana ? " filtro-activo" : ""}`}>
               {PESTANAS[t].nombre} <b>{n}</b>
             </Link>
           ))}
@@ -309,7 +309,7 @@ export default async function Inicio({
                 <div className="pedido-meta">📁 Lo atendiste por tu cuenta: la app no le escribe a esta clienta.</div>
                 <form action={desarchivarPedido} className="enlinea">
                   <input type="hidden" name="id" value={p.id} />
-                  <button type="submit">Devolver a pendientes</button>
+                  <button type="submit">Devolver a “Por confirmar”</button>
                 </form>
               </>
             )}

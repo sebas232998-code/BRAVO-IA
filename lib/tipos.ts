@@ -27,12 +27,16 @@ export const NOMBRE_ESTADO: Record<Estado, string> = {
   archivado: "Atendido por fuera",
 };
 
-// Pestañas del panel de pedidos.
+// Pestañas del panel de pedidos (cada estado en una sola). "siempre": se ve aunque esté vacía.
 export const PESTANAS = {
-  pendientes: { nombre: "Por atender", estados: ["por_confirmar", "confirmado", "error", "novedad"] },
-  cerrados: { nombre: "Enviados y cerrados", estados: ["enviado_dropi", "entregado", "devuelto", "cancelado", "sin_respuesta"] },
-  archivados: { nombre: "Archivados", estados: ["archivado"] },
-} as const satisfies Record<string, { nombre: string; estados: readonly Estado[] }>;
+  por_confirmar: { nombre: "Por confirmar", estados: ["por_confirmar"], siempre: true },
+  confirmados: { nombre: "Confirmados", estados: ["confirmado"], siempre: true },
+  en_dropi: { nombre: "En Dropi", estados: ["enviado_dropi"], siempre: false },
+  con_error: { nombre: "Con error", estados: ["error", "novedad"], siempre: false },
+  sin_respuesta: { nombre: "Sin respuesta", estados: ["sin_respuesta"], siempre: false },
+  cerrados: { nombre: "Entregados y cancelados", estados: ["entregado", "devuelto", "cancelado"], siempre: false },
+  archivados: { nombre: "Archivados", estados: ["archivado"], siempre: false },
+} as const satisfies Record<string, { nombre: string; estados: readonly Estado[]; siempre: boolean }>;
 export type Pestana = keyof typeof PESTANAS;
 
 export interface ItemPedido {
