@@ -278,7 +278,7 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 ## Cambios pedidos por la clienta (decisión de Sebastián, 16 nov 2026)
 
 - Si la clienta pide un cambio ("en realidad es el de 2 puestos", "quiero 2", "cámbienme la dirección"), la IA lo aplica y el pedido queda confirmado: si está pidiendo el cambio es porque quiere el producto, no se le pide confirmar otra vez.
-- Respuesta corta: "Listo, ya actualicé tu pedido ✅" con los datos que cambiaron y el total (si cambia la cantidad cambia lo que va a pagar). No se le pregunta nada.
+- Respuesta de una sola frase con solo lo que cambió, nada de resumen completo ni preguntas. Ejemplos: "Listo, tu pedido quedó actualizado a 1 forro de 3 puestos color beige ✅" · "Listo, ya actualicé la dirección a Cra 50 # 10-20 ✅". El total se agrega solo cuando cambia lo que va a pagar: "Listo, tu pedido quedó actualizado a 3 forros de 3 puestos color gris ✅ El total ahora es $239.700".
 - Si ella responde ("ok, gracias") o no dice nada en un par de minutos, sale el mensaje de pedido confirmado ("Tu pedido está siendo procesado y será despachado lo más pronto posible 🚚"). Si pregunta algo, la IA responde primero.
 - La espera de 5 minutos antes de subir a Dropi sigue igual: si dice "no, eso no", la subida se detiene.
 - Variantes y cantidades: solo las que existen en Shopify, con el precio de Shopify; el pedido sube a Dropi con la variación vinculada. Si pide algo que no existe o no está claro, la IA pregunta o escala al vendedor; nunca adivina.
