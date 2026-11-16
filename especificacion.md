@@ -294,3 +294,9 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Si escribe varios mensajes seguidos, se responde una sola vez (al último). Lo que la IA no sabe o no puede hacer queda en el pedido como "🤖 La IA te necesita" (y en la bandeja de errores), con el botón "Ya lo resolví"; si ya estaba confirmado, la subida a Dropi se detiene.
 - Catálogo de variantes: se llena con los avisos de Shopify "Creación de producto" y "Actualización de producto" (mismo webhook y misma clave que los pedidos) y con lo que traen los pedidos. Así no hace falta darle a Bravo IA acceso a la tienda.
 - Si una variante nueva no está vinculada con Dropi, el pedido cae a la bandeja de errores con "Producto sin escoger en Dropi".
+
+## Idea para la Fase 3: cada vendedor escoge su IA (pedido de Sebastián, 16 nov 2026)
+
+- Cuando otros dropshippers usen Bravo IA, cada uno podrá escoger qué IA atiende sus mensajes (Claude, ChatGPT u otra parecida) y pegar la clave de su propia cuenta, así ese consumo lo paga él directo.
+- Las reglas de tono, los límites (no inventar descuentos, no cancelar, escalar lo que no sabe) y las herramientas son las mismas para todas; solo cambia el "cerebro". Por eso la parte de la IA está separada en `lib/ia`.
+- Por ahora (tiendas propias) se usa Claude con la clave de Sebastián.
