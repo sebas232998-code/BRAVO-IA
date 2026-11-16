@@ -300,3 +300,8 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Cuando otros dropshippers usen Bravo IA, cada uno podrá escoger qué IA atiende sus mensajes (Claude, ChatGPT u otra parecida) y pegar la clave de su propia cuenta, así ese consumo lo paga él directo.
 - Las reglas de tono, los límites (no inventar descuentos, no cancelar, escalar lo que no sabe) y las herramientas son las mismas para todas; solo cambia el "cerebro". Por eso la parte de la IA está separada en `lib/ia`.
 - Por ahora (tiendas propias) se usa Claude con la clave de Sebastián.
+
+## Avance: simulador de la IA (16 nov 2026)
+
+- Pantalla `/probar-ia` (enlace "Probar la IA" en Piloto automático): el vendedor escoge un pedido, escribe como si fuera la clienta y ve qué respondería la app (sin IA, Haiku o Sonnet) y cómo quedaría el pedido. Corre la IA de verdad sobre una copia: no envía WhatsApp ni cambia el pedido. Sirve para ajustar cómo habla la IA antes de usarla con clientas (necesita la clave de Anthropic).
+- Pendiente de probar: la subida a Dropi nunca se ha usado con un pedido real.

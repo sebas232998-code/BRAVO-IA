@@ -124,3 +124,4 @@ a.filtro { text-decoration: none; }
 .chips { margin: 10px 0 0; }
 .chip-error { color: var(--error); background: #2a1513; }
 .enlinea { margin-top: 8px; }
+.nota-ia { justify-self: center; color: var(--suave); font-size: 12px; text-align: center; max-width: 90%; }

@@ -45,7 +45,10 @@ export default async function PilotoAutomatico({
       <h1>
         Piloto <span>automático</span>
       </h1>
-      <p className="subtitulo">La app confirma y sube los pedidos sola, sin que tengas que tocar nada.</p>
+      <p className="subtitulo">
+        La app confirma y sube los pedidos sola, sin que tengas que tocar nada ·{" "}
+        <Link href="/probar-ia" className="enlace">Probar la IA</Link>
+      </p>
 
       {q.ok && <div className="listo caja">{q.ok}</div>}
       {q.error && <div className="problema caja">{q.error}</div>}
