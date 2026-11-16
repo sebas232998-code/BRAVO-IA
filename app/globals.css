@@ -144,3 +144,4 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 .pestanas { display: flex; background: var(--tarjeta); border-radius: 999px; padding: 4px; margin: 8px 0 12px; }
 .pestana { flex: 1; text-align: center; padding: 8px 6px; border-radius: 999px; color: var(--suave); text-decoration: none; font-size: 14px; }
 .pestana-activa { background: var(--acento); color: #0b0e11; font-weight: 600; }
+.cifra-rescatadas b { color: var(--acento); }

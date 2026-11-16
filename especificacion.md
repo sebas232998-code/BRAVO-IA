@@ -130,7 +130,7 @@ Si un error se repite, la app guarda la corrección para la próxima vez.
 
 ## Panel y alertas (Fase 2)
 
-Tasa de entrega (entregados ÷ despachados) por tienda, producto, ciudad y transportadora; pedidos estancados; utilidad real por pedido entregado; mejor transportadora por ciudad; recaudo pendiente; ventas rescatadas (en el panel se llama "Ventas rescatadas por Bravo IA", con el número grande en amarillo, para que se vea lo que la app le ganó al vendedor); resumen diario por WhatsApp.
+Tasa de entrega (entregados ÷ despachados) por tienda, producto, ciudad y transportadora; pedidos estancados; utilidad real por pedido entregado; mejor transportadora por ciudad; recaudo pendiente; ventas rescatadas (en el panel se llama "Rescatadas por Bravo IA": una cifra más, con el número en amarillo pero sin protagonismo; lo principal es la tasa de entrega — cambio de Sebastián del 16 nov 2026); resumen diario por WhatsApp.
 
 ## Configuración y tono
 
@@ -335,3 +335,4 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - "Ver cómo se verá con datos": llena el panel con números de ejemplo para ver el diseño.
 - El panel va en 3 pestañas para que no quede largo: "Resumen" (ventas rescatadas, tasa de entrega y cifras), "Tasas" (las 4 tasas en cuadrícula de 2 × 2) y "Mis números" (costos por producto).
 - Pendiente: los estados de entrega vienen de Dropi. Shopify no los tiene (la app de Dropi solo pone la etiqueta "Order sent to dropi"). Opciones: leerlos por la API de Dropi o subir el reporte de Excel que exporta Dropi.
+- Cambio (pedido de Sebastián, 16 nov 2026): las ventas rescatadas no van en grande arriba; son una cifra más en "Resumen" ("Rescatadas por Bravo IA"), y lo primero que se ve es la tasa de entrega.

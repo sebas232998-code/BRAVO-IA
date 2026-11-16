@@ -94,15 +94,6 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
       )}
 
       {vista === "resumen" && (<>
-      <section className="pedido rescatadas">
-        <div className="pedido-meta">Ventas rescatadas por Bravo IA</div>
-        <div className="numero-grande">{m.rescatadas}</div>
-        <div className="pedido-meta">
-          {m.rescatadas === 0
-            ? "Pedidos que confirmaron gracias al seguimiento, al descuento de rescate o a la IA."
-            : `${formatoPesos(m.plataRescatada)} en pedidos que se hubieran perdido.`}
-        </div>
-      </section>
 
       <section className={`pedido tasa-principal${nivel?.leyenda ? " leyenda" : ""}`}>
         <CirculoTasa tasa={entrega} minimo={minimoGeneral} leyenda={nivel?.leyenda} tamano={150} />
@@ -130,6 +121,10 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
         <div><b>{m.porConfirmar}</b><span>Por confirmar</span></div>
         <div><b>{m.sinRespuesta}</b><span>Sin respuesta o cancelados</span></div>
         <div><b>{m.enDropi}</b><span>Subidos a Dropi</span></div>
+        <div className="cifra-rescatadas">
+          <b>{m.rescatadas}</b>
+          <span>Rescatadas por Bravo IA{m.rescatadas > 0 ? ` · ${formatoPesos(m.plataRescatada)}` : ""}</span>
+        </div>
       </section>
       </>)}
 
