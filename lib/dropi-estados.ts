@@ -16,6 +16,7 @@ export interface OrdenDropiLeida {
   shop_order_id: string | null;
   creado_en: string;
   actualizado_en: string | null;
+  es_prueba?: boolean;
 }
 
 // Dropi manda las fechas sin zona horaria (hora de Colombia).
@@ -32,8 +33,18 @@ const nombre = (x: unknown): string | null => {
 };
 const num = (x: unknown): number | null => (x === null || x === undefined || x === "" || isNaN(Number(x)) ? null : Number(x));
 
+const simple = (s: string) => s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
+// ¿Es un pedido de prueba del vendedor? (por su nombre o porque dice "prueba"/"test")
+export function esPrueba(o: Record<string, unknown>, nombresPrueba: string[] = []): boolean {
+  const nombre = simple(`${o.name ?? ""} ${o.surname ?? ""}`);
+  const notas = simple(`${o.notes ?? ""} ${nombre}`);
+  if (/\b(PRUEBA|PRUEBAS|TEST)\b/.test(notas)) return true;
+  return nombresPrueba.map(simple).filter(Boolean).some((n) => nombre.includes(n));
+}
+
 // Convierte un pedido de la API de Dropi, dejando por fuera los datos personales.
-export function leerOrden(o: Record<string, unknown>): OrdenDropiLeida | null {
+export function leerOrden(o: Record<string, unknown>, nombresPrueba: string[] = []): OrdenDropiLeida | null {
   const id = num(o.id);
   const creado = fechaDropi(o.created_at);
   if (!id || !creado) return null;
@@ -61,6 +72,7 @@ export function leerOrden(o: Record<string, unknown>): OrdenDropiLeida | null {
     shop_order_id: o.shop_order_id ? String(o.shop_order_id) : null,
     creado_en: creado,
     actualizado_en: fechaDropi(o.updated_at),
+    es_prueba: esPrueba(o, nombresPrueba),
   };
 }
 
@@ -141,7 +153,7 @@ export function porGrupo(ordenes: OrdenDropiLeida[], campo: "ciudad" | "transpor
 }
 
 // Trae de Dropi las páginas de pedidos (las más nuevas primero) hasta llegar a la fecha límite.
-export async function traerOrdenesDropi(hastaFecha: Date, maxPaginas = 12): Promise<{ ordenes: OrdenDropiLeida[]; error: string | null }> {
+export async function traerOrdenesDropi(hastaFecha: Date, maxPaginas = 12, nombresPrueba: string[] = []): Promise<{ ordenes: OrdenDropiLeida[]; error: string | null }> {
   const base = (process.env.DROPI_API_URL ?? "https://api.dropi.co/integrations").replace(/\/$/, "");
   const ordenes: OrdenDropiLeida[] = [];
   const POR_PAGINA = 100;
@@ -159,7 +171,7 @@ export async function traerOrdenesDropi(hastaFecha: Date, maxPaginas = 12): Prom
     }
     const lista = json.objects ?? [];
     for (const o of lista) {
-      const leida = leerOrden(o);
+      const leida = leerOrden(o, nombresPrueba);
       if (leida) ordenes.push(leida);
     }
     const masViejo = ordenes.at(-1)?.creado_en;

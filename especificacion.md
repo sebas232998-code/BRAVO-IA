@@ -353,3 +353,4 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - La tasa mínima de efectividad para no perder dinero la escribe el vendedor, por tienda (tabla `tasas_minimas`), con el botón amarillo "+ Agrega tu tasa mínima…" junto a la tasa de entrega.
 - Fechas: por defecto "Últimos 30 días"; también 7 y 90 días y "Escoger fechas" (desde / hasta). La comparación es contra el rango anterior del mismo tamaño.
 - Solo aparecen las tiendas que tienen pedidos en las fechas escogidas (las viejas no salen); por defecto, la tienda de la app (PETION).
+- Pedidos de prueba (pedido de Sebastián, 16 nov 2026): al leer Dropi, la app marca como prueba los pedidos a nombre de los "nombres de prueba" (tabla `ajustes`, clave `nombres_prueba`; hoy "Sebastian Toro") o que digan "prueba"/"test" en el nombre o las notas, sin guardar el nombre. No cuentan en el panel, que avisa "Sin contar N pedidos de prueba".

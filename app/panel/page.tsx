@@ -85,7 +85,9 @@ export default async function Panel({
 
   // Estados reales de Dropi (se sincronizan solos cada 30 minutos).
   const latidoDropi = conectada ? await ultimoLatido("dropi") : null;
-  const todasDropi = conectada && !ejemplo ? await ordenesDropiDesde(r.anterior.desde) : [];
+  const conPruebas = conectada && !ejemplo ? await ordenesDropiDesde(r.anterior.desde) : [];
+  // Los pedidos de prueba del vendedor no cuentan.
+  const todasDropi = conPruebas.filter((o) => !o.es_prueba);
   const enRango = (o: OrdenDropiLeida, d: Date, h: Date) => new Date(o.creado_en) >= d && new Date(o.creado_en) < h;
   const delRango = todasDropi.filter((o) => enRango(o, r.desde, r.hasta));
   // Solo las tiendas que tienen pedidos en estas fechas (las viejas no aparecen).
@@ -314,7 +316,13 @@ export default async function Panel({
         </>
       )}
 
-      <p className="pedido-meta">Los pedidos archivados (atendidos por fuera) no cuentan.</p>
+      <p className="pedido-meta">
+        Los pedidos archivados (atendidos por fuera) no cuentan.
+        {(() => {
+          const n = filtrar(conPruebas.filter((o) => o.es_prueba && enRango(o, r.desde, r.hasta))).length;
+          return n > 0 ? ` Sin contar ${n} ${n === 1 ? "pedido" : "pedidos"} de prueba.` : "";
+        })()}
+      </p>
     </main>
   );
 }

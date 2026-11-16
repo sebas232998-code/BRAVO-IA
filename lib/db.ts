@@ -534,3 +534,9 @@ export async function guardarTasaMinimaTienda(tienda: string, tasa: number | nul
   const { error } = await db().from("tasas_minimas").upsert({ tienda, tasa, actualizado_en: new Date().toISOString() });
   if (error) throw error;
 }
+
+export async function ajuste(clave: string): Promise<string | null> {
+  const { data, error } = await db().from("ajustes").select("valor").eq("clave", clave).maybeSingle();
+  if (error) return null; // si aún no se corrió la migración 013
+  return data?.valor ?? null;
+}

@@ -54,3 +54,14 @@ describe("estados de Dropi", () => {
     expect(promediosDropi([o("ENTREGADO")])).toBeNull();
   });
 });
+
+import { esPrueba } from "../lib/dropi-estados";
+describe("pedidos de prueba", () => {
+  it("reconoce los del vendedor y los que dicen prueba", () => {
+    expect(esPrueba({ name: "Sebastián", surname: "Toro" }, ["Sebastian Toro"])).toBe(true);
+    expect(esPrueba({ name: "Pedido", surname: "de prueba" })).toBe(true);
+    expect(esPrueba({ name: "Laura", surname: "Gómez", notes: "TEST" })).toBe(true);
+    expect(esPrueba({ name: "Laura", surname: "Gómez", notes: "casa azul" }, ["Sebastian Toro"])).toBe(false);
+    expect(esPrueba({ name: "Ernestina", surname: "Contreras" })).toBe(false); // "TEST" dentro de otra palabra no cuenta
+  });
+});
