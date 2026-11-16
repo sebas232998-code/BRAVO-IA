@@ -38,6 +38,26 @@ function resumir(json: unknown) {
     }
   }
   salida.valoresEstado = valores;
+  // Estructura (solo nombres de campos) de las partes anidadas, y conteo por estado.
+  const p0 = lista[0] ?? {};
+  const det = Array.isArray(p0.orderdetails) ? (p0.orderdetails as Record<string, unknown>[])[0] ?? {} : {};
+  salida.camposDetalle = Object.keys(det).slice(0, 60);
+  salida.camposProducto = Object.keys((det.product ?? {}) as object).slice(0, 60);
+  salida.camposVariacion = Object.keys((det.variation ?? {}) as object).slice(0, 40);
+  salida.camposTienda = Object.keys((p0.shop ?? {}) as object).slice(0, 30);
+  salida.camposTransportadora = Object.keys((p0.distribution_company ?? {}) as object);
+  salida.transportadoras = [...new Set(lista.map((p) => (p.distribution_company as { name?: string } | null)?.name).filter(Boolean))];
+  salida.tiendas = [...new Set(lista.map((p) => (p.shop as { name?: string } | null)?.name).filter(Boolean))];
+  salida.productos = [...new Set(lista.flatMap((p) => ((p.orderdetails as { product?: { name?: string } }[]) ?? []).map((d) => d.product?.name)).filter(Boolean))].slice(0, 10);
+  const porEstado: Record<string, number> = {};
+  for (const p of lista) porEstado[String(p.status)] = (porEstado[String(p.status)] ?? 0) + 1;
+  salida.porEstado = porEstado;
+  salida.ejemploNumeros = lista.slice(0, 3).map((p) => ({
+    total_order: p.total_order,
+    shipping_amount: p.shipping_amount,
+    detalle: ((p.orderdetails as Record<string, unknown>[]) ?? []).slice(0, 1).map((d) => ({ price: d.price, quantity: d.quantity, supplier_price: d.supplier_price })),
+  }));
+  salida.fechas = { mas_nuevo: lista[0]?.created_at, mas_viejo: lista.at(-1)?.created_at };
   return salida;
 }
 
