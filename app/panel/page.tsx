@@ -12,13 +12,22 @@ export const dynamic = "force-dynamic";
 const PERIODOS: [Periodo, string][] = [["hoy", "Hoy"], ["semana", "Esta semana"], ["mes", "Este mes"]];
 const FALTA_DROPI = "Llega cuando la app lea los estados de Dropi.";
 
-export default async function Panel({ searchParams }: { searchParams: Promise<{ periodo?: string; ejemplo?: string; tasa?: string }> }) {
+export default async function Panel({ searchParams }: { searchParams: Promise<{ periodo?: string; ejemplo?: string; tasa?: string; vista?: string }> }) {
   const q = await searchParams;
   const periodo: Periodo = (["hoy", "semana", "mes"] as const).find((x) => x === q.periodo) ?? "semana";
   const conectada = baseConfigurada();
   const pedidos = conectada ? await listarPedidos(2000) : PEDIDOS_EJEMPLO;
   const conIA = conectada ? await pedidosConIA(pedidos.map((p) => p.id!).filter(Boolean)) : new Set<string>();
   const ejemplo = q.ejemplo === "1";
+  const vista = (["resumen", "tasas", "numeros"] as const).find((x) => x === q.vista) ?? "resumen";
+  // Arma el enlace conservando lo demás (período, ejemplo).
+  const enlace = (cambios: Record<string, string | null>) => {
+    const u = new URLSearchParams();
+    const todo = { periodo: q.periodo ?? null, ejemplo: q.ejemplo ?? null, tasa: q.tasa ?? null, vista: q.vista ?? null, ...cambios };
+    for (const [k, v] of Object.entries(todo)) if (v && !(k === "vista" && v === "resumen")) u.set(k, v);
+    const t = u.toString();
+    return t ? `/panel?${t}` : "/panel";
+  };
   const m = calcularMetricas(pedidos, inicioPeriodo(periodo), conIA);
   // "Ver cómo se verá": números de ejemplo (no son tuyos) para mostrar el diseño.
   if (ejemplo) {
@@ -58,24 +67,33 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
       <h1>
         Tu <span>panel</span>
       </h1>
-      <div className="filtros">
-        {PERIODOS.map(([p, nombre]) => (
-          <Link key={p} href={`/panel?periodo=${p}`} className={`filtro${p === periodo ? " filtro-activo" : ""}`}>{nombre}</Link>
+      <div className="pestanas">
+        {([["resumen", "Resumen"], ["tasas", "Tasas"], ["numeros", "Mis números"]] as const).map(([v, nombre]) => (
+          <Link key={v} href={enlace({ vista: v })} className={`pestana${v === vista ? " pestana-activa" : ""}`}>{nombre}</Link>
         ))}
       </div>
+
+      {vista !== "numeros" && (
+        <div className="filtros">
+          {PERIODOS.map(([p, nombre]) => (
+            <Link key={p} href={enlace({ periodo: p })} className={`filtro${p === periodo ? " filtro-activo" : ""}`}>{nombre}</Link>
+          ))}
+        </div>
+      )}
 
       {ejemplo ? (
         <div className="aviso">
           Estos números son de EJEMPLO, para que veas cómo se verá. Prueba otras tasas:{" "}
           {[91, 87, 75, 62, 48, 40].map((t) => (
-            <Link key={t} href={`/panel?ejemplo=1&tasa=${t}`} className="enlace">{t}% </Link>
+            <Link key={t} href={enlace({ ejemplo: "1", tasa: String(t) })} className="enlace">{t}% </Link>
           ))}
-          · <Link href="/panel" className="enlace">Volver a mis números</Link>
+          · <Link href={enlace({ ejemplo: null, tasa: null })} className="enlace">Volver a mis números</Link>
         </div>
       ) : (
-        <p className="pedido-meta"><Link href="/panel?ejemplo=1" className="enlace">Ver cómo se verá con datos →</Link></p>
+        vista !== "numeros" && <p className="pedido-meta"><Link href={enlace({ ejemplo: "1" })} className="enlace">Ver cómo se verá con datos →</Link></p>
       )}
 
+      {vista === "resumen" && (<>
       <section className="pedido rescatadas">
         <div className="pedido-meta">Ventas rescatadas por Bravo IA</div>
         <div className="numero-grande">{m.rescatadas}</div>
@@ -106,12 +124,22 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
         </div>
       </section>
 
+      <section className="pedido cifras">
+        <div><b>{m.recibidos}</b><span>Recibidos</span></div>
+        <div><b>{m.confirmados}</b><span>Confirmados</span></div>
+        <div><b>{m.porConfirmar}</b><span>Por confirmar</span></div>
+        <div><b>{m.sinRespuesta}</b><span>Sin respuesta o cancelados</span></div>
+        <div><b>{m.enDropi}</b><span>Subidos a Dropi</span></div>
+      </section>
+      </>)}
+
+      {vista === "tasas" && (
       <section className="pedido">
         <div className="pedido-nombre">Tasas de operación</div>
         <div className="lista-tasas">
           {tasas.map((t) => (
             <div key={t.nombre} className="fila-tasa">
-              <CirculoTasa tasa={t.valor} tamano={64} invertida={t.invertida} />
+              <CirculoTasa tasa={t.valor} tamano={84} invertida={t.invertida} />
               <div>
                 <b>{t.nombre}</b>
                 <div className="pedido-meta">{t.valor === null ? t.falta : t.explica}</div>
@@ -120,16 +148,14 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
           ))}
         </div>
       </section>
+      )}
 
-      <section className="pedido cifras">
-        <div><b>{m.recibidos}</b><span>Recibidos</span></div>
-        <div><b>{m.confirmados}</b><span>Confirmados</span></div>
-        <div><b>{m.porConfirmar}</b><span>Por confirmar</span></div>
-        <div><b>{m.sinRespuesta}</b><span>Sin respuesta o cancelados</span></div>
-        <div><b>{m.enDropi}</b><span>Subidos a Dropi</span></div>
-      </section>
 
-      {filas.length > 0 && (
+
+      {vista === "numeros" && filas.length === 0 && (
+        <p className="subtitulo">Todavía no hay productos en el catálogo.</p>
+      )}
+      {vista === "numeros" && filas.length > 0 && (
         <section className="pedido">
           <div className="pedido-nombre">Tus números por producto</div>
           <p className="pedido-meta">

@@ -333,4 +333,5 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - "Tasas de operación": confirmación, novedad (color al revés: menos es mejor), rescate y real de venta, cada una con su círculo y su frase.
 - "Tus números por producto": costo del proveedor, flete de ida, CPA y tasa mínima propia. La app calcula el mínimo con (flete + CPA) ÷ (precio − costo) y lo sugiere ("Según tus costos, tu mínimo es 44 %").
 - "Ver cómo se verá con datos": llena el panel con números de ejemplo para ver el diseño.
+- El panel va en 3 pestañas para que no quede largo: "Resumen" (ventas rescatadas, tasa de entrega y cifras), "Tasas" (las 4 tasas en cuadrícula de 2 × 2) y "Mis números" (costos por producto).
 - Pendiente: los estados de entrega vienen de Dropi. Shopify no los tiene (la app de Dropi solo pone la etiqueta "Order sent to dropi"). Opciones: leerlos por la API de Dropi o subir el reporte de Excel que exporta Dropi.

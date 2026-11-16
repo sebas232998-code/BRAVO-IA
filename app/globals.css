@@ -136,8 +136,11 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 .cifras span { color: var(--suave); font-size: 12px; }
 .tasa-principal { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .tasa-principal.leyenda { box-shadow: 0 0 0 1px #00E676, 0 0 18px rgba(0, 230, 118, 0.35); }
-.lista-tasas { display: grid; gap: 12px; margin-top: 10px; }
-.fila-tasa { display: flex; gap: 12px; align-items: center; }
+.lista-tasas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; margin-top: 12px; }
+.fila-tasa { display: grid; justify-items: center; text-align: center; gap: 6px; }
 .numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .numeros label { display: grid; gap: 4px; font-size: 13px; color: var(--suave); }
 .circulo { flex: none; }
+.pestanas { display: flex; background: var(--tarjeta); border-radius: 999px; padding: 4px; margin: 8px 0 12px; }
+.pestana { flex: 1; text-align: center; padding: 8px 6px; border-radius: 999px; color: var(--suave); text-decoration: none; font-size: 14px; }
+.pestana-activa { background: var(--acento); color: #0b0e11; font-weight: 600; }
