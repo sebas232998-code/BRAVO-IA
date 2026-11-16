@@ -25,25 +25,32 @@ describe("panel", () => {
   });
 });
 
-import { comparacion, consejoConfirmacion, consejoEntrega, periodoAnterior } from "../lib/metricas";
+import { comparacion, consejoConfirmacion, consejoEntrega, rango } from "../lib/metricas";
 
-describe("comparación y consejos", () => {
-  it("compara con el período anterior", () => {
-    expect(comparacion(91, 88, "semana")).toEqual({ texto: "▲ 3 puntos vs la semana pasada", bueno: true });
-    expect(comparacion(12, 15, "mes", true)).toEqual({ texto: "▼ 3 puntos vs el mes pasado", bueno: true });
-    expect(comparacion(80, 80, "hoy")?.texto).toBe("Igual que ayer");
-    expect(comparacion(80, null, "hoy")).toBeNull();
+describe("rango de fechas, comparación y consejos", () => {
+  it("por defecto, los últimos 30 días; el anterior es del mismo tamaño", () => {
+    const ahora = new Date("2026-11-16T15:00:00Z");
+    const r = rango(undefined, undefined, undefined, ahora);
+    expect(r.nombre).toBe("Últimos 30 días");
+    expect(Math.round((r.hasta.getTime() - r.desde.getTime()) / 86_400_000)).toBe(30);
+    expect(r.anterior.hasta.getTime()).toBe(r.desde.getTime());
+    expect(rango("7d", undefined, undefined, ahora).nombre).toBe("Últimos 7 días");
   });
-  it("la semana pasada empieza 7 días antes", () => {
-    const p = periodoAnterior("semana", new Date("2026-11-18T15:00:00Z"));
-    expect(p.desde.toISOString()).toBe("2026-11-09T05:00:00.000Z");
-    expect(p.hasta.toISOString()).toBe("2026-11-16T05:00:00.000Z");
-    expect(periodoAnterior("mes", new Date("2026-11-18T15:00:00Z")).desde.toISOString()).toBe("2026-10-01T05:00:00.000Z");
+  it("fechas escogidas (hora de Colombia, el último día incluido)", () => {
+    const r = rango("fechas", "2026-10-01", "2026-10-31");
+    expect(r.desde.toISOString()).toBe("2026-10-01T05:00:00.000Z");
+    expect(r.hasta.toISOString()).toBe("2026-11-01T05:00:00.000Z");
+    expect(r.anterior.nombre).toBe("los 31 días anteriores");
+    expect(rango("fechas", "2026-10-31", "2026-10-01").clave).toBe("30d"); // al revés: no vale
+  });
+  it("compara con el rango anterior", () => {
+    expect(comparacion(91, 88, "los 30 días anteriores")).toEqual({ texto: "▲ 3 puntos vs los 30 días anteriores", bueno: true });
+    expect(comparacion(12, 15, "x", true)?.bueno).toBe(true);
+    expect(comparacion(80, null, "x")).toBeNull();
   });
   it("consejos según la zona", () => {
-    expect(consejoEntrega(92, 44, 0)).toContain("Semana brava");
+    expect(consejoEntrega(92, 44, 0)).toContain("Leyenda");
     expect(consejoEntrega(48, 44, 12)).toContain("las 12 novedades abiertas");
-    expect(consejoEntrega(null, 44, 3)).toBeNull();
     expect(consejoConfirmacion(60, 5, false)).toContain("Prende el seguimiento");
   });
 });

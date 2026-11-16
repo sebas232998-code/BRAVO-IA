@@ -157,3 +157,6 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 .boton-amarillo { display: block; text-align: center; background: var(--acento); color: #0b0e11; font-weight: 600; border-radius: 999px; padding: 10px 14px; text-decoration: none; font-size: 14px; }
 .grupo { display: grid; gap: 6px; margin-top: 12px; }
 .fila-grupo { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline; font-size: 14px; }
+.fechas { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-bottom: 12px; }
+.fechas label { display: grid; gap: 4px; font-size: 13px; color: var(--suave); }
+.fechas input { width: auto; color-scheme: dark; }

@@ -94,33 +94,65 @@ export function semaforo(tasa: number): { color: string; frase: string } {
   return { color: "#ff6b5e", frase: "Hay que revisar" };
 }
 
-// El período anterior del mismo tamaño (ayer, la semana pasada, el mes pasado).
-export function periodoAnterior(periodo: Periodo, ahora = new Date()): { desde: Date; hasta: Date } {
-  const hasta = inicioPeriodo(periodo, ahora);
-  if (periodo === "hoy") return { desde: new Date(hasta.getTime() - 86_400_000), hasta };
-  if (periodo === "semana") return { desde: new Date(hasta.getTime() - 7 * 86_400_000), hasta };
-  return { desde: inicioPeriodo("mes", new Date(hasta.getTime() - 86_400_000)), hasta };
+// ---------- Rango de fechas del panel ----------
+
+export type ClaveRango = "7d" | "30d" | "90d" | "fechas";
+
+export interface Rango {
+  clave: ClaveRango;
+  desde: Date;
+  hasta: Date; // sin incluir
+  nombre: string;
+  anterior: { desde: Date; hasta: Date; nombre: string };
 }
 
-const NOMBRE_ANTERIOR: Record<Periodo, string> = { hoy: "ayer", semana: "la semana pasada", mes: "el mes pasado" };
+const DIA = 86_400_000;
+// "2026-11-16" → inicio de ese día en hora de Colombia.
+const diaColombia = (s: string) => new Date(`${s}T00:00:00-05:00`);
+const valida = (s: string | undefined) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(diaColombia(s).getTime()) ? s : null);
 
-// "▲ 3 puntos vs la semana pasada"
-export function comparacion(actual: number | null, antes: number | null, periodo: Periodo, menosEsMejor = false) {
+export function rango(clave: string | undefined, desdeTxt?: string, hastaTxt?: string, ahora = new Date()): Rango {
+  const d = valida(desdeTxt);
+  const h = valida(hastaTxt);
+  if (clave === "fechas" && d && h && d <= h) {
+    const desde = diaColombia(d);
+    const hasta = new Date(diaColombia(h).getTime() + DIA);
+    const largo = hasta.getTime() - desde.getTime();
+    const dias = Math.round(largo / DIA);
+    return {
+      clave: "fechas",
+      desde,
+      hasta,
+      nombre: `Del ${d} al ${h}`,
+      anterior: { desde: new Date(desde.getTime() - largo), hasta: desde, nombre: `los ${dias} días anteriores` },
+    };
+  }
+  const dias = clave === "7d" ? 7 : clave === "90d" ? 90 : 30;
+  const hasta = new Date(ahora.getTime() + 60_000);
+  const desde = new Date(hasta.getTime() - dias * DIA);
+  return {
+    clave: dias === 7 ? "7d" : dias === 90 ? "90d" : "30d",
+    desde,
+    hasta,
+    nombre: `Últimos ${dias} días`,
+    anterior: { desde: new Date(desde.getTime() - dias * DIA), hasta: desde, nombre: `los ${dias} días anteriores` },
+  };
+}
+
+// "▲ 3 puntos vs los 30 días anteriores"
+export function comparacion(actual: number | null, antes: number | null, nombreAnterior: string, menosEsMejor = false) {
   if (actual === null || antes === null) return null;
   const d = actual - antes;
-  const cuando = NOMBRE_ANTERIOR[periodo];
-  if (d === 0) return { texto: `Igual que ${cuando}`, bueno: null as boolean | null };
+  if (d === 0) return { texto: `Igual que ${nombreAnterior}`, bueno: null as boolean | null };
   const puntos = Math.abs(d) === 1 ? "1 punto" : `${Math.abs(d)} puntos`;
-  return { texto: `${d > 0 ? "▲" : "▼"} ${puntos} vs ${cuando}`, bueno: menosEsMejor ? d < 0 : d > 0 };
+  return { texto: `${d > 0 ? "▲" : "▼"} ${puntos} vs ${nombreAnterior}`, bueno: menosEsMejor ? d < 0 : d > 0 };
 }
 
 // Qué hacer, en una línea, según cómo va la tasa de entrega.
-const BRAVO: Record<Periodo, string> = { hoy: "¡Día bravo!", semana: "¡Semana brava!", mes: "¡Mes bravo!" };
-
-export function consejoEntrega(tasa: number | null, minimo: number | null, conNovedad: number, periodo: Periodo = "semana"): string | null {
+export function consejoEntrega(tasa: number | null, minimo: number | null, conNovedad: number): string | null {
   if (tasa === null) return null;
   const novedades = conNovedad > 0 ? `Atiende rápido ${conNovedad === 1 ? "la novedad abierta" : `las ${conNovedad} novedades abiertas`}: cada una que salves sube tu tasa.` : "";
-  if (tasa >= 90) return `${BRAVO[periodo]} 🔥 Sigue así.`;
+  if (tasa >= 90) return "¡Bravo! 🔥 Tu operación va en nivel Leyenda. Sigue así.";
   if (tasa >= 85) return "Vas muy bien. Sigue confirmando bien los datos antes de despachar.";
   if (minimo !== null && tasa < minimo) return `${novedades || "Revisa qué ciudad o transportadora te está devolviendo más."} Mientras tanto, cada devolución te cuesta el flete.`.trim();
   if (minimo !== null && tasa - minimo <= 10) return novedades || "Revisa qué ciudad o transportadora te está devolviendo más.";

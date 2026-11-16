@@ -346,3 +346,10 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - El panel de Entregas usa esos datos: filtro por tienda, tasa de entrega/novedad/rescate/real de venta reales, "en camino", y "¿Dónde se pierden?" (tasa de entrega por transportadora, ciudad y producto, de peor a mejor, últimos 45 días).
 - La tasa mínima se calcula sola con los promedios reales de Dropi (venta, costo del proveedor y flete por pedido) si el vendedor no escribe los suyos; solo falta el CPA para hablar de "perder plata".
 - `/api/dropi/diagnostico` (solo lectura, protegido) muestra la estructura de la API sin datos personales.
+
+## Cambio: el panel es de operación, no de costos (pedido de Sebastián, 16 nov 2026)
+
+- El panel muestra cómo va la operación (entregados, devueltos, en camino, novedades), no costos: se quitó "Mis números" y no se piden costo del proveedor ni CPA.
+- La tasa mínima de efectividad para no perder dinero la escribe el vendedor, por tienda (tabla `tasas_minimas`), con el botón amarillo "+ Agrega tu tasa mínima…" junto a la tasa de entrega.
+- Fechas: por defecto "Últimos 30 días"; también 7 y 90 días y "Escoger fechas" (desde / hasta). La comparación es contra el rango anterior del mismo tamaño.
+- Solo aparecen las tiendas que tienen pedidos en las fechas escogidas (las viejas no salen); por defecto, la tienda de la app (PETION).

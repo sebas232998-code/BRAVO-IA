@@ -517,3 +517,20 @@ export async function todosLosVinculos(): Promise<{ tienda_dominio: string; shop
     return c ? [{ tienda_dominio: v.tienda_dominio, shopify_product_id: Number(c.shopify_product_id), dropi_product_id: Number(v.dropi_product_id) }] : [];
   });
 }
+
+// ---------- Tasa mínima por tienda ----------
+
+export async function tasasMinimas(): Promise<Record<string, number>> {
+  const { data, error } = await db().from("tasas_minimas").select("tienda, tasa");
+  if (error) return {}; // si aún no se corrió la migración 012
+  return Object.fromEntries((data ?? []).map((r) => [String(r.tienda), Number(r.tasa)]));
+}
+
+export async function guardarTasaMinimaTienda(tienda: string, tasa: number | null) {
+  if (tasa === null) {
+    await db().from("tasas_minimas").delete().eq("tienda", tienda);
+    return;
+  }
+  const { error } = await db().from("tasas_minimas").upsert({ tienda, tasa, actualizado_en: new Date().toISOString() });
+  if (error) throw error;
+}
