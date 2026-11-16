@@ -33,7 +33,8 @@ Reglas fijas:
 - Si pide un cambio pero no dice cuál (por ejemplo "quiero cambiar la dirección"), responde: "Ok, no hay ningún problema. Envía los datos que deseas editar directamente aquí."
 - Si pide una variante que no está en el catálogo, dile con amabilidad cuáles hay. Si no está claro cuál desea, pregúntale corto. Nunca adivines.
 - Si solo confirma, usa confirmar_pedido y responde exactamente ${SIN_RESPUESTA} (la app le envía el mensaje de confirmación).
-- Nunca inventes descuentos, promociones, precios, fechas o tiempos de entrega, garantías, formas de pago ni datos de la tienda. Si pregunta algo que no está en la información que tienes, usa escalar_al_vendedor y respóndele corto que ya lo consultas y le confirmas en un momento.
+- Para preguntas sobre el producto, envíos, garantía, cambios o pagos, responde solo con lo que diga <tienda> (lo escribió el vendedor), con tus palabras y corto. Si no está ahí, no lo inventes: usa escalar_al_vendedor y respóndele corto que ya lo consultas y le confirmas en un momento.
+- Nunca inventes descuentos, promociones, precios, fechas o tiempos de entrega, garantías, formas de pago ni datos de la tienda.
 - No puedes cancelar pedidos. Si ya no lo desea o pone una objeción ("no tengo la plata", "lo vi más barato"), pregúntale con amabilidad el porqué, dale la razón y usa escalar_al_vendedor.
 - Si el pedido ya está confirmado y pide un cambio, igual lo puedes cambiar (todavía no ha salido).
 - Si el mensaje no necesita respuesta, responde exactamente ${SIN_RESPUESTA}.
@@ -115,7 +116,7 @@ export function llamarClaudeReal(): LlamarClaude {
   return (params) => cliente.beta.messages.create(params);
 }
 
-export function contexto(p: Pedido, catalogo: Variante[], chat: MensajeChat[], estado: string): string {
+export function contexto(p: Pedido, catalogo: Variante[], chat: MensajeChat[], estado: string, cerebro: string | null = null): string {
   const productos = [...new Set(p.items.map((i) => i.shopify_product_id))];
   const cat = productos
     .map((id) => {
@@ -130,6 +131,7 @@ export function contexto(p: Pedido, catalogo: Variante[], chat: MensajeChat[], e
     .map((m) => `[${m.direccion === "entrante" ? "clienta" : "tienda"}] ${m.texto}`)
     .join("\n");
   return [
+    `<tienda>\n${cerebro?.trim() || "(el vendedor no ha escrito información de la tienda)"}\n</tienda>`,
     `<pedido estado="${estado}">\n${estadoParaIA(p)}\n</pedido>`,
     `<catalogo>\n${cat || "(no hay catálogo cargado: no se pueden cambiar variantes; si lo pide, escala al vendedor)"}\n</catalogo>`,
     `<conversacion>\n${conversacion}\n</conversacion>`,
@@ -143,6 +145,7 @@ export async function atenderMensaje(
   catalogo: Variante[],
   chat: MensajeChat[],
   estado: string,
+  cerebro: string | null = null,
 ): Promise<ResultadoAgente> {
   let pedido = pedidoOriginal;
   let cambio = false;
@@ -150,7 +153,7 @@ export async function atenderMensaje(
   let escalar: string | null = null;
 
   const mensajes: Anthropic.Beta.BetaMessageParam[] = [
-    { role: "user", content: contexto(pedidoOriginal, catalogo, chat, estado) },
+    { role: "user", content: contexto(pedidoOriginal, catalogo, chat, estado, cerebro) },
   ];
 
   const ejecutar = (nombre: string, entrada: Record<string, unknown>): { texto: string; error: boolean } => {

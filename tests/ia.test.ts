@@ -147,3 +147,12 @@ describe("reglas de la IA", () => {
     expect(HERRAMIENTAS.map((h) => h.name)).toEqual(["cambiar_producto", "cambiar_datos_envio", "confirmar_pedido", "escalar_al_vendedor"]);
   });
 });
+
+describe("cerebro de la tienda", () => {
+  it("la IA recibe lo que escribió el vendedor", async () => {
+    const { llamar, pedidos } = claudeSimulado([[texto("Te llega en 2 a 4 días hábiles 🚚")]]);
+    await atenderMensaje(llamar, pedido, catalogo, chat("¿cuánto se demora?"), "por confirmar", "Envíos: 2 a 4 días hábiles.");
+    expect(JSON.stringify(pedidos[0].messages)).toContain("Envíos: 2 a 4 días hábiles.");
+    expect(REGLAS).toContain("responde solo con lo que diga <tienda>");
+  });
+});

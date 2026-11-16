@@ -38,3 +38,8 @@ App creada por dropshippers, para dropshippers: confirma pedidos por WhatsApp, r
 2. Vercel: agregar `ANTHROPIC_API_KEY` (console.anthropic.com → API Keys) y volver a desplegar.
 3. Shopify → Configuración → Notificaciones → Webhooks: crear "Creación de producto" y "Actualización de producto" apuntando a la misma dirección que el de pedidos; después guardar cada producto una vez para que llegue.
 4. En "Piloto automático", prender "La IA atiende los mensajes de las clientas".
+
+## Cerebro de la tienda
+
+1. Supabase: correr `supabase/migrations/009_cerebro.sql`.
+2. En "Cerebro de la tienda", escribir lo que la IA puede responder.

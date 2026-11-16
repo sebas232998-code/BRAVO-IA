@@ -1,6 +1,6 @@
 "use server";
 
-import { catalogoDe } from "@/lib/db";
+import { catalogoDe, tiendaDe } from "@/lib/db";
 import { variantesDePedido } from "@/lib/catalogo";
 import { iaConfigurada } from "@/lib/conversacion";
 import { atenderMensaje, llamarClaudeReal, type MensajeChat } from "@/lib/ia/agente";
@@ -61,6 +61,7 @@ export async function probarMensaje(previo: EstadoSimulador, f: FormData): Promi
       completo,
       chat.filter((m) => !m.nota),
       confirmado ? "confirmado, todavía no ha salido" : "por confirmar",
+      (await tiendaDe(p.tienda_dominio))?.cerebro ?? null,
     );
 
     const salida: Burbuja[] = [...chat];

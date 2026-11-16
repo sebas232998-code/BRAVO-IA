@@ -101,4 +101,5 @@ export interface Tienda {
   descuento_porcentaje: number;
   descuento_horas: number;
   ia_activa: boolean;
+  cerebro: string | null;
 }

@@ -412,3 +412,8 @@ export async function pedidosConAvisoVencido(): Promise<Pedido[]> {
   if (error) return []; // si aún no se corrió la migración 008
   return (data ?? []) as Pedido[];
 }
+
+export async function guardarCerebro(dominio: string, cerebro: string) {
+  const { error } = await db().from("tiendas").update({ cerebro }).eq("dominio", dominio);
+  if (error) throw error;
+}

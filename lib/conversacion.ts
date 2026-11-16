@@ -8,6 +8,7 @@ import {
   guardarVariantes,
   obtenerPedido,
   registrarEvento,
+  tiendaDe,
 } from "./db";
 import { variantesDePedido } from "./catalogo";
 import { atenderMensaje, llamarClaudeReal, type LlamarClaude } from "./ia/agente";
@@ -106,7 +107,15 @@ export async function atenderConIA(
 
   let r;
   try {
-    r = await atenderMensaje(deps.llamar ?? llamarClaudeReal(), p, completo, chat, NOMBRE_ESTADO_IA[p.estado] ?? p.estado);
+    const tienda = await tiendaDe(p.tienda_dominio);
+    r = await atenderMensaje(
+      deps.llamar ?? llamarClaudeReal(),
+      p,
+      completo,
+      chat,
+      NOMBRE_ESTADO_IA[p.estado] ?? p.estado,
+      tienda?.cerebro ?? null,
+    );
   } catch (e) {
     console.log("[ia] error", e);
     await actualizarPedido(p.id, {

@@ -47,6 +47,7 @@ export default async function PilotoAutomatico({
       </h1>
       <p className="subtitulo">
         La app confirma y sube los pedidos sola, sin que tengas que tocar nada ·{" "}
+        <Link href="/cerebro" className="enlace">Cerebro de la tienda</Link> ·{" "}
         <Link href="/probar-ia" className="enlace">Probar la IA</Link>
       </p>
 

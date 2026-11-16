@@ -312,3 +312,9 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Botón "Ya lo atendí por mi cuenta 📁": el vendedor lo toca cuando ya habló con la clienta por fuera. El pedido pasa a "Archivados" y la app no le escribe nunca (ni confirmación, ni seguimiento, ni IA). "Devolver a Por confirmar" lo regresa.
 - Si la confirmación ya se envió, el botón de reenviar queda escondido detrás de "¿Reenviar?" para no tocarlo por error.
 - Los 9 pedidos que había antes del 16 nov los atendió Sebastián por fuera: la app no los toca; él decide si los archiva.
+
+## Avance: cerebro de la tienda (16 nov 2026, adelantado de la Fase 2)
+
+- Pantalla `/cerebro` (enlace en Piloto automático): por tienda, un cuadro de texto con lo que la IA puede responder (producto, medidas, envíos, garantía, cambios, pagos, preguntas frecuentes). La IA responde solo con eso; lo que no esté, lo escala al vendedor.
+- PETION quedó prellenada con lo que se sabía de la tienda y de la ficha de Dropi (colores, medidas, acolchado, lavado, precio, pago contraentrega). Faltan los tiempos de entrega, la garantía y los cambios: los escribe Sebastián.
+- Pendiente: leer el link de la tienda automáticamente (por ahora se escribe a mano; las políticas de PETION en Shopify solo tienen la de privacidad).
