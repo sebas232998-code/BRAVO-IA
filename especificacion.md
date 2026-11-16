@@ -270,3 +270,7 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Ciudad mal escrita: antes de subir a Dropi quita el departamento pegado ("Cali, Valle", "Medellín - Antioquia", "Cali Valle") y entiende apodos (Medallo, Bquilla, Bmanga, Villavo).
 - Aprende las correcciones: si Dropi rechaza un pedido y el vendedor corrige la ortografía de la ciudad, la próxima vez que llegue escrita igual se arregla sola (desde que entra el pedido). Solo aprende cuando la corrección se parece a lo escrito, para no aprender cambios de ciudad de verdad.
 - Pendiente: "sin cobertura de transportadora" (falta saber qué permite la API de Dropi).
+
+## Avance: días hábiles (16 nov 2026)
+
+- `lib/festivos.ts`: festivos de Colombia de cualquier año (fijos, los que se corren al lunes y los de Semana Santa), "¿es día hábil?" y "fecha después de N días hábiles". Listo para la herramienta `consultar_dias_habiles` de la IA (Fase 2).
