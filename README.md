@@ -43,3 +43,8 @@ App creada por dropshippers, para dropshippers: confirma pedidos por WhatsApp, r
 
 1. Supabase: correr `supabase/migrations/009_cerebro.sql`.
 2. En "Cerebro de la tienda", escribir lo que la IA puede responder.
+
+## Tasas con semáforo
+
+1. Supabase: correr `supabase/migrations/010_numeros_producto.sql`.
+2. En el Panel, llenar "Tus números por producto".

@@ -326,3 +326,11 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Tasa de confirmación en un círculo con semáforo (verde desde 85 %, Leyenda desde 90 %, amarillo hacia 70 %, naranja hacia 60 %, rojo abajo), medida sobre los pedidos ya decididos (confirmados ÷ confirmados + sin respuesta/cancelados), con una frase que la explica.
 - Cifras: recibidos, confirmados, por confirmar, sin respuesta o cancelados, subidos a Dropi. Los archivados no cuentan.
 - Pendiente: tasa de entrega, novedad, rescate y real de venta (necesitan leer los estados de Dropi).
+
+## Avance: tasas de operación con semáforo (16 nov 2026)
+
+- El panel muestra la tasa de entrega grande con el círculo de color que cambia de a poquito (verde intenso con borde iluminado para "Leyenda 🔥" desde 90 %, "Excelente" 85-89, "Bien, pero ojo", "En riesgo (faltan X puntos para tu mínimo)", y "Por debajo de tu tasa mínima"; "para perder" / "Perdiendo plata" solo cuando se conoce el CPA), la rayita del punto de equilibrio y los avisos al acercarse a 5 puntos o cruzar el mínimo.
+- "Tasas de operación": confirmación, novedad (color al revés: menos es mejor), rescate y real de venta, cada una con su círculo y su frase.
+- "Tus números por producto": costo del proveedor, flete de ida, CPA y tasa mínima propia. La app calcula el mínimo con (flete + CPA) ÷ (precio − costo) y lo sugiere ("Según tus costos, tu mínimo es 44 %").
+- "Ver cómo se verá con datos": llena el panel con números de ejemplo para ver el diseño.
+- Pendiente: los estados de entrega vienen de Dropi. Shopify no los tiene (la app de Dropi solo pone la etiqueta "Order sent to dropi"). Opciones: leerlos por la API de Dropi o subir el reporte de Excel que exporta Dropi.

@@ -26,6 +26,16 @@ export interface Metricas {
   tasaConfirmacion: number | null; // 0-100
   rescatadas: number;
   plataRescatada: number;
+  // Tasas de operación (null = todavía no hay con qué calcularla)
+  tasas: {
+    confirmacion: number | null;
+    entrega: number | null;
+    novedad: number | null;
+    rescate: number | null;
+    realVenta: number | null;
+  };
+  entregados: number;
+  devueltos: number;
 }
 
 // Rescatada por Bravo IA: confirmó después de un mensaje de seguimiento, con el descuento de rescate
@@ -43,6 +53,11 @@ export function calcularMetricas(pedidos: Pedido[], desde: Date, conIA: Set<stri
   // La tasa se mide sobre los que ya se decidieron (confirmaron o no respondieron / cancelaron).
   const decididos = confirmados.length + sinRespuesta.length;
   const rescatadas = confirmados.filter((p) => esRescatada(p, conIA));
+  const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : null);
+  const entregados = del.filter((p) => p.estado === "entregado").length;
+  const devueltos = del.filter((p) => p.estado === "devuelto").length;
+  const despachados = del.filter((p) => ["enviado_dropi", "novedad", "entregado", "devuelto"].includes(p.estado)).length;
+  const conNovedad = del.filter((p) => p.estado === "novedad").length;
   return {
     recibidos: del.length,
     confirmados: confirmados.length,
@@ -52,6 +67,15 @@ export function calcularMetricas(pedidos: Pedido[], desde: Date, conIA: Set<stri
     tasaConfirmacion: decididos ? Math.round((confirmados.length / decididos) * 100) : null,
     rescatadas: rescatadas.length,
     plataRescatada: rescatadas.reduce((s, p) => s + Number(p.total), 0),
+    tasas: {
+      confirmacion: decididos ? Math.round((confirmados.length / decididos) * 100) : null,
+      entrega: pct(entregados, entregados + devueltos),
+      novedad: pct(conNovedad, despachados),
+      rescate: null, // llega cuando la app lea las novedades de Dropi
+      realVenta: entregados + devueltos > 0 ? pct(entregados, del.length) : null,
+    },
+    entregados,
+    devueltos,
   };
 }
 

@@ -429,3 +429,47 @@ export async function pedidosConIA(ids: string[]): Promise<Set<string>> {
   if (error) return new Set();
   return new Set((data ?? []).map((e) => e.pedido_id as string));
 }
+
+// ---------- Números por producto (punto de equilibrio) ----------
+
+export interface FilaNumeros {
+  tienda_dominio: string;
+  shopify_product_id: number;
+  costo: number | null;
+  flete: number | null;
+  cpa: number | null;
+  tasa_minima: number | null;
+}
+
+export async function numerosProductos(): Promise<FilaNumeros[]> {
+  const { data, error } = await db().from("productos_numeros").select("*");
+  if (error) return []; // si aún no se corrió la migración 010
+  const n = (x: unknown) => (x === null || x === undefined ? null : Number(x));
+  return (data ?? []).map((r) => ({
+    tienda_dominio: r.tienda_dominio,
+    shopify_product_id: Number(r.shopify_product_id),
+    costo: n(r.costo),
+    flete: n(r.flete),
+    cpa: n(r.cpa),
+    tasa_minima: n(r.tasa_minima),
+  }));
+}
+
+export async function guardarNumerosProducto(f: FilaNumeros) {
+  const { error } = await db()
+    .from("productos_numeros")
+    .upsert({ ...f, actualizado_en: new Date().toISOString() }, { onConflict: "tienda_dominio,shopify_product_id" });
+  if (error) throw error;
+}
+
+// Un producto por fila (con el precio de su primera variante) para el panel.
+export async function productosDelCatalogo(): Promise<{ tienda_dominio: string; shopify_product_id: number; producto: string; precio: number }[]> {
+  const { data, error } = await db().from("catalogo_variantes").select("tienda_dominio, shopify_product_id, producto, precio");
+  if (error) return [];
+  const vistos = new Map<string, { tienda_dominio: string; shopify_product_id: number; producto: string; precio: number }>();
+  for (const v of data ?? []) {
+    const k = `${v.tienda_dominio}|${v.shopify_product_id}`;
+    if (!vistos.has(k)) vistos.set(k, { tienda_dominio: v.tienda_dominio, shopify_product_id: Number(v.shopify_product_id), producto: v.producto, precio: Number(v.precio) });
+  }
+  return [...vistos.values()];
+}

@@ -134,3 +134,10 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 .cifras div { display: grid; gap: 2px; }
 .cifras b { font-size: 22px; }
 .cifras span { color: var(--suave); font-size: 12px; }
+.tasa-principal { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.tasa-principal.leyenda { box-shadow: 0 0 0 1px #00E676, 0 0 18px rgba(0, 230, 118, 0.35); }
+.lista-tasas { display: grid; gap: 12px; margin-top: 10px; }
+.fila-tasa { display: flex; gap: 12px; align-items: center; }
+.numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.numeros label { display: grid; gap: 4px; font-size: 13px; color: var(--suave); }
+.circulo { flex: none; }
