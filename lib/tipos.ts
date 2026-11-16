@@ -68,6 +68,9 @@ export interface Pedido {
   descuento_aplicado?: boolean;
   descuento_vencido_avisado?: boolean;
   total_original?: number | null;
+  // IA
+  aviso_confirmado_en?: string | null;
+  atencion_vendedor?: string | null;
 }
 
 // Interruptores del piloto automático de cada tienda.
@@ -83,4 +86,5 @@ export interface Tienda {
   descuento_activo: boolean;
   descuento_porcentaje: number;
   descuento_horas: number;
+  ia_activa: boolean;
 }

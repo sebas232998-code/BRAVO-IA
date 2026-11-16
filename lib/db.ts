@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Pedido, Tienda } from "./tipos";
 import type { VinculoDropi } from "./dropi";
 import type { ConfigWhatsApp } from "./whatsapp";
+import type { Variante } from "./catalogo";
 
 let cliente: SupabaseClient | null = null;
 
@@ -345,4 +346,69 @@ export async function guardarCorreccionCiudad(original: string, ciudad: string, 
   await db()
     .from("correcciones_ciudad")
     .upsert({ original, ciudad, departamento, actualizado_en: new Date().toISOString() });
+}
+
+// ---------- IA ----------
+
+export async function tiendaDe(dominio: string): Promise<Tienda | null> {
+  const { data, error } = await db().from("tiendas").select("*").eq("dominio", dominio).maybeSingle();
+  if (error) return null;
+  return data as Tienda | null;
+}
+
+export async function guardarVariantes(vs: Variante[]) {
+  if (vs.length === 0) return;
+  const { error } = await db()
+    .from("catalogo_variantes")
+    .upsert(vs.map((v) => ({ ...v, actualizado_en: new Date().toISOString() })), {
+      onConflict: "tienda_dominio,shopify_variant_id",
+    });
+  if (error) console.log("[catalogo] no se pudo guardar", error.message);
+}
+
+export async function catalogoDe(tienda: string, productos: number[]): Promise<Variante[]> {
+  if (productos.length === 0) return [];
+  const { data, error } = await db()
+    .from("catalogo_variantes")
+    .select("*")
+    .eq("tienda_dominio", tienda)
+    .in("shopify_product_id", productos);
+  if (error) return [];
+  return (data ?? []).map((v) => ({
+    ...v,
+    shopify_product_id: Number(v.shopify_product_id),
+    shopify_variant_id: Number(v.shopify_variant_id),
+    precio: Number(v.precio),
+  })) as Variante[];
+}
+
+export async function chatDe(pedidoId: string): Promise<{ wa_id: string | null; direccion: "entrante" | "saliente"; texto: string }[]> {
+  const { data, error } = await db()
+    .from("mensajes_whatsapp")
+    .select("wa_id, direccion, texto")
+    .eq("pedido_id", pedidoId)
+    .order("creado_en", { ascending: true })
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []) as { wa_id: string | null; direccion: "entrante" | "saliente"; texto: string }[];
+}
+
+// Toma el aviso de "pedido confirmado" pendiente para que salga una sola vez.
+export async function apartarAvisoConfirmado(id: string, soloSiVencio: boolean): Promise<boolean> {
+  let q = db().from("pedidos").update({ aviso_confirmado_en: null }).eq("id", id).not("aviso_confirmado_en", "is", null);
+  if (soloSiVencio) q = q.lte("aviso_confirmado_en", new Date().toISOString());
+  const { data, error } = await q.select("id");
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+export async function pedidosConAvisoVencido(): Promise<Pedido[]> {
+  const { data, error } = await db()
+    .from("pedidos")
+    .select("*")
+    .not("aviso_confirmado_en", "is", null)
+    .lte("aviso_confirmado_en", new Date().toISOString())
+    .limit(50);
+  if (error) return []; // si aún no se corrió la migración 008
+  return (data ?? []) as Pedido[];
 }

@@ -123,3 +123,4 @@ a.filtro { text-decoration: none; }
 .ajustes input { width: 64px; padding: 6px 8px; text-align: center; }
 .chips { margin: 10px 0 0; }
 .chip-error { color: var(--error); background: #2a1513; }
+.enlinea { margin-top: 8px; }

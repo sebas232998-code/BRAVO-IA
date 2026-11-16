@@ -7,9 +7,9 @@ import {
   marcarEstadoMensaje,
   pedidoAbiertoDe,
   registrarEvento,
+  tiendaDe,
 } from "@/lib/db";
-import { MENSAJE_CONFIRMADO } from "@/lib/mensajes";
-import { decidirDescuento, mensajeDescuentoVencido } from "@/lib/seguimiento";
+import { atenderConIA, confirmarPorWhatsApp, enviarAvisoConfirmado, iaConfigurada } from "@/lib/conversacion";
 import { enviarYGuardar } from "@/lib/wa-servidor";
 import {
   esConfirmacion,
@@ -22,6 +22,9 @@ import {
   MENSAJE_CORREGIR,
   mensajeTexto,
 } from "@/lib/whatsapp";
+
+// La IA puede tardar unos segundos en responder (corre después de contestarle a Meta).
+export const maxDuration = 60;
 
 // Meta llama aquí una vez para comprobar que la dirección es nuestra (botón "Verificar y guardar").
 export async function GET(req: Request) {
@@ -85,57 +88,22 @@ export async function POST(req: Request) {
 
     const id = pedido.id;
     const confirma = esConfirmacion(m.texto);
-    // Regla fija: solo un "sí" claro confirma. El pedido NO se sube a Dropi aquí:
-    // arranca la espera de 5 minutos y el reloj de tareas lo sube después (si el piloto está prendido).
+    const noPideNada = m.tipo === "reaction" || m.tipo === "sticker" || esCortesia(m.texto);
 
     // Si la clienta escribe, el seguimiento automático se detiene (ya respondió).
     if (!pedido.ultima_respuesta_en) await actualizarPedido(id, { ultima_respuesta_en: new Date().toISOString() });
 
+    // Regla fija: solo un "sí" claro confirma. El pedido NO se sube a Dropi aquí:
+    // arranca la espera de 5 minutos y el reloj de tareas lo sube después (si el piloto está prendido).
     if (pedido.estado !== "confirmado" && confirma) {
-      const d = decidirDescuento(pedido, new Date());
-
-      // Se le ofreció descuento y ya venció: se le avisa con amabilidad y se le ofrece el precio normal.
-      if (d.tipo === "avisar_vencido") {
-        await actualizarPedido(id, { descuento_vencido_avisado: true });
-        await registrarEvento(id, "descuento_vencido_avisado", { texto: m.texto });
-        const aviso = mensajeDescuentoVencido(Number(pedido.total));
-        after(async () => {
-          await espera(4000);
-          await enviarYGuardar(c, m.de, mensajeTexto(m.de, aviso), aviso, id);
-        });
-        continue;
-      }
-
-      await actualizarPedido(id, {
-        estado: "confirmado",
-        confirmado_en: new Date().toISOString(),
-        dropi_en_pausa: null,
-        // Confirmó a tiempo con descuento: el valor a recaudar en Dropi queda rebajado.
-        ...(d.tipo === "aplicar"
-          ? { total_original: Number(pedido.total), total: d.nuevoTotal, descuento_aplicado: true }
-          : {}),
-      });
-      await registrarEvento(id, "confirmado_whatsapp", {
-        texto: m.texto,
-        ...(d.tipo === "aplicar" ? { descuento: Number(pedido.descuento_valor), total: d.nuevoTotal } : {}),
-      });
-      after(async () => {
-        await espera(5000); // que no parezca un robot
-        await enviarYGuardar(c, m.de, mensajeTexto(m.de, MENSAJE_CONFIRMADO), MENSAJE_CONFIRMADO, id);
-      });
+      after(() => confirmarPorWhatsApp(pedido, c, m.de, m.texto));
       continue;
     }
 
-    // Ya confirmó y todavía no está en Dropi, pero volvió a escribir ("no, espera, faltó…"):
-    // la subida automática se detiene hasta que el vendedor lo revise.
-    // Un "gracias", un sticker, una reacción o un nuevo "sí" no la detienen.
-    const noPideNada = m.tipo === "reaction" || m.tipo === "sticker" || esCortesia(m.texto);
-    if (pedido.estado === "confirmado" && !confirma && !noPideNada) {
-      const motivo = m.texto
-        ? `La clienta escribió después de confirmar: “${m.texto.slice(0, 200)}”`
-        : "La clienta mandó una foto, audio o archivo después de confirmar.";
-      await actualizarPedido(id, { dropi_en_pausa: motivo });
-      await registrarEvento(id, "pausa_dropi", { texto: m.texto });
+    // La IA actualizó el pedido y ella responde "ok, gracias": sale ya el mensaje de pedido confirmado.
+    if (pedido.estado === "confirmado" && (confirma || noPideNada)) {
+      if (pedido.aviso_confirmado_en) after(() => enviarAvisoConfirmado(c, m.de, id, false));
+      continue;
     }
 
     if (esCorregirDatos(m.texto)) {
@@ -144,6 +112,25 @@ export async function POST(req: Request) {
         await espera(3000);
         await enviarYGuardar(c, m.de, mensajeTexto(m.de, MENSAJE_CORREGIR), MENSAJE_CORREGIR, id);
       });
+      continue;
+    }
+    if (noPideNada) continue;
+
+    // Todo lo demás lo atiende la IA (si está prendida para la tienda y hay clave de Anthropic).
+    const tienda = await tiendaDe(c.tienda_dominio);
+    if (tienda?.ia_activa && iaConfigurada() && m.texto) {
+      after(() => atenderConIA(id, c, m.de, m.id));
+      continue;
+    }
+
+    // Sin IA: lo dudoso solo se guarda. Si ya había confirmado y volvió a escribir ("no, espera, faltó…"),
+    // la subida automática a Dropi se detiene hasta que el vendedor lo revise.
+    if (pedido.estado === "confirmado") {
+      const motivo = m.texto
+        ? `La clienta escribió después de confirmar: “${m.texto.slice(0, 200)}”`
+        : "La clienta mandó una foto, audio o archivo después de confirmar.";
+      await actualizarPedido(id, { dropi_en_pausa: motivo });
+      await registrarEvento(id, "pausa_dropi", { texto: m.texto });
     }
   }
 

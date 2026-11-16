@@ -113,3 +113,11 @@ export async function enviarConfirmacionWhatsApp(f: FormData) {
   revalidatePath("/");
   redirect(r.ok ? `/?ok=${encodeURIComponent(`Confirmación enviada a ${p.nombre_clienta}.`)}` : `/?error=${encodeURIComponent(`WhatsApp: ${r.mensaje}`)}`);
 }
+
+// El vendedor ya atendió lo que la IA le dejó.
+export async function atencionResuelta(f: FormData) {
+  const id = texto(f, "id");
+  await actualizarPedido(id, { atencion_vendedor: null });
+  await registrarEvento(id, "atencion_resuelta");
+  revalidatePath("/");
+}

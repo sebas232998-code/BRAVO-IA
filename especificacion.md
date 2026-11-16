@@ -284,3 +284,13 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Variantes y cantidades: solo las que existen en Shopify, con el precio de Shopify; el pedido sube a Dropi con la variación vinculada. Si pide algo que no existe o no está claro, la IA pregunta o escala al vendedor; nunca adivina.
 - Si el pedido ya está en Dropi: depende de lo que permita la API de Dropi (pendiente por verificar); si no deja editar, la IA responde con amabilidad y avisa al vendedor.
 - Necesita: clave de la API de Anthropic, Shopify conectado con lectura de productos (variantes y precios) y el token de WhatsApp para probar con mensajes reales.
+
+## Avance: la IA atiende a las clientas (16 nov 2026)
+
+- Interruptor por tienda en `/automatico`: "La IA atiende los mensajes de las clientas" (viene apagado; necesita `ANTHROPIC_API_KEY` en Vercel).
+- Lo claro sigue sin IA (gratis): un "sí", el botón, "Corregir datos", un "gracias" o un sticker. Lo demás pasa primero por Haiku (`claude-haiku-5-5`), que decide si es un "sí" o un "gracias" dicho de otra forma; si no, lo atiende Sonnet (`claude-sonnet-5-5`, esfuerzo bajo, con el reintento automático de Anthropic si un filtro de seguridad rechaza por error).
+- Herramientas de la IA: `cambiar_producto` (variante o cantidad, solo del catálogo y con el precio de la tienda; el total sube o baja en la diferencia, así se respeta el envío), `cambiar_datos_envio`, `confirmar_pedido` y `escalar_al_vendedor`. La app valida cada cambio; la IA no puede inventar variantes ni precios.
+- Si cambia algo, el pedido queda confirmado, sale una frase con lo que cambió (y el total si cambió) y el "pedido confirmado" sale cuando ella responda o a los 2 minutos. La espera de 5 minutos antes de Dropi arranca de nuevo. Si tenía descuento de rescate vigente, se respeta sobre el total nuevo.
+- Si escribe varios mensajes seguidos, se responde una sola vez (al último). Lo que la IA no sabe o no puede hacer queda en el pedido como "🤖 La IA te necesita" (y en la bandeja de errores), con el botón "Ya lo resolví"; si ya estaba confirmado, la subida a Dropi se detiene.
+- Catálogo de variantes: se llena con los avisos de Shopify "Creación de producto" y "Actualización de producto" (mismo webhook y misma clave que los pedidos) y con lo que traen los pedidos. Así no hace falta darle a Bravo IA acceso a la tienda.
+- Si una variante nueva no está vinculada con Dropi, el pedido cae a la bandeja de errores con "Producto sin escoger en Dropi".

@@ -31,3 +31,10 @@ App creada por dropshippers, para dropshippers: confirma pedidos por WhatsApp, r
 ## Bandeja de errores (Fase 1, paso 6)
 
 1. Supabase: correr `supabase/migrations/007_bandeja_errores.sql`.
+
+## La IA atiende a las clientas (Fase 1, paso 7)
+
+1. Supabase: correr `supabase/migrations/008_ia.sql`.
+2. Vercel: agregar `ANTHROPIC_API_KEY` (console.anthropic.com → API Keys) y volver a desplegar.
+3. Shopify → Configuración → Notificaciones → Webhooks: crear "Creación de producto" y "Actualización de producto" apuntando a la misma dirección que el de pedidos; después guardar cada producto una vez para que llegue.
+4. En "Piloto automático", prender "La IA atiende los mensajes de las clientas".

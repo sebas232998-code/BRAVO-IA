@@ -11,6 +11,7 @@ export function problemasDe(p: Pedido, vinculos: VinculoDropi[]): string[] {
   if (!p.telefono) lista.push(`Número: ${problemaTelefono(p.telefono_original)}`);
   if (p.error_whatsapp) lista.push("WhatsApp no le llegó");
   if (p.error_dropi) lista.push("Dropi lo rechazó");
+  if (p.atencion_vendedor) lista.push("La IA te necesita");
   if (p.dropi_en_pausa && p.estado === "confirmado") lista.push("Escribió después de confirmar");
   const sinVincular = p.items.filter(
     (i) => i.shopify_variant_id && !vinculos.some((v) => v.shopify_variant_id === i.shopify_variant_id),

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { baseConfigurada, configsWhatsApp, tiendasConInterruptores, ultimoLatido } from "@/lib/db";
 import { HORA_FIN, HORA_INICIO } from "@/lib/automatico";
 import { guardarAutomatico } from "./acciones";
+import { iaConfigurada } from "@/lib/conversacion";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +33,11 @@ export default async function PilotoAutomatico({
   }
 
   const tiendas = await tiendasConInterruptores();
+  const iaLista = iaConfigurada();
   const conWhatsApp = new Set((await configsWhatsApp()).map((c) => c.tienda_dominio));
   const latido = await ultimoLatido("tareas");
   const relojAndando = latido && Date.now() - new Date(latido.ultima_vez).getTime() < 3 * 60_000;
-  const algunoPrendido = tiendas.some((t) => t.auto_confirmacion || t.auto_dropi || t.auto_seguimiento);
+  const algunoPrendido = tiendas.some((t) => t.auto_confirmacion || t.auto_dropi || t.auto_seguimiento || t.ia_activa);
 
   return (
     <main>
@@ -83,6 +85,17 @@ export default async function PilotoAutomatico({
               <div>
                 <b>Subir a Dropi sola</b>
                 <span>5 minutos después de que la clienta confirma, por si quiere corregir algo.</span>
+              </div>
+            </label>
+            <label className="interruptor">
+              <input type="checkbox" name="ia_activa" defaultChecked={t.ia_activa} disabled={!iaLista || !conWhatsApp.has(t.dominio)} />
+              <div>
+                <b>La IA atiende los mensajes de las clientas</b>
+                <span>
+                  {!iaLista
+                    ? "Falta poner la clave de Anthropic (ANTHROPIC_API_KEY) en Vercel."
+                    : "Responde lo que preguntan y cambia el pedido cuando lo piden (variante, cantidad, dirección). Si no sabe algo, te avisa a ti; nunca inventa precios ni descuentos."}
+                </span>
               </div>
             </label>
             <label className="interruptor">

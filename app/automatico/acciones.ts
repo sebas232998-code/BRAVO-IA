@@ -35,6 +35,7 @@ export async function guardarAutomatico(f: FormData) {
     auto_confirmacion: autoConfirmacion,
     auto_dropi: autoDropi,
     auto_seguimiento: autoSeguimiento,
+    ia_activa: f.get("ia_activa") === "on",
     seguimiento_horas: horas as number[],
     descuento_activo: f.get("descuento_activo") === "on",
     descuento_porcentaje: porcentaje,

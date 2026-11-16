@@ -4,6 +4,7 @@ import {
   baseConfigurada,
   confirmadosSinSubir,
   configWhatsAppDe,
+  pedidosConAvisoVencido,
   pedidosEnSeguimiento,
   pedidosSinConfirmacion,
   registrarLatido,
@@ -12,6 +13,7 @@ import {
 import { tocaEnviarConfirmacion, tocaSubirADropi } from "@/lib/automatico";
 import { enviarConfirmacion, enviarSeguimiento, marcarSinRespuesta, subirPedido } from "@/lib/flujo";
 import { siguientePaso } from "@/lib/seguimiento";
+import { enviarAvisoConfirmado } from "@/lib/conversacion";
 
 // Reloj de tareas del piloto automático. Supabase (pg_cron) llama aquí cada minuto.
 // 1. Envía la confirmación por WhatsApp a los pedidos nuevos.
@@ -34,7 +36,7 @@ function autorizado(req: Request): boolean {
 
 async function vuelta() {
   const ahora = new Date();
-  const resumen = { confirmaciones: 0, errores_whatsapp: 0, subidos_dropi: 0, errores_dropi: 0, seguimientos: 0, sin_respuesta: 0 };
+  const resumen = { confirmaciones: 0, errores_whatsapp: 0, subidos_dropi: 0, errores_dropi: 0, seguimientos: 0, sin_respuesta: 0, avisos_confirmado: 0 };
 
   for (const t of await tiendasConInterruptores()) {
     if (t.auto_confirmacion) {
@@ -75,6 +77,17 @@ async function vuelta() {
         if (r.ok) resumen.subidos_dropi++;
         else resumen.errores_dropi++;
       }
+    }
+  }
+
+  // Mensaje de "pedido confirmado" que quedó pendiente después de que la IA actualizó el pedido
+  // y la clienta no volvió a escribir.
+  for (const p of await pedidosConAvisoVencido()) {
+    if (!p.telefono) continue;
+    const c = await configWhatsAppDe(p.tienda_dominio);
+    if (c) {
+      await enviarAvisoConfirmado(c, p.telefono, p.id!, true);
+      resumen.avisos_confirmado++;
     }
   }
 

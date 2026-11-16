@@ -21,6 +21,7 @@ import {
   eliminarPedido,
   enviarConfirmacionWhatsApp,
   marcarConfirmado,
+  atencionResuelta,
   quitarPausaDropi,
   subirADropi,
   vincularProducto,
@@ -168,6 +169,15 @@ export default async function Inicio({
             {p.descuento_aplicado && p.total_original && (
               <div className="listo">
                 🛍 Confirmó con descuento: {formatoPesos(Number(p.total_original))} → {formatoPesos(Number(p.total))}
+              </div>
+            )}
+            {p.atencion_vendedor && !enDropi && (
+              <div className="problema">
+                🤖 La IA te necesita: {p.atencion_vendedor}
+                <form action={atencionResuelta} className="enlinea">
+                  <input type="hidden" name="id" value={p.id} />
+                  <button type="submit">Ya lo resolví</button>
+                </form>
               </div>
             )}
             {p.error_dropi && <div className="problema">Dropi: {p.error_dropi}</div>}
