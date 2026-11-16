@@ -17,6 +17,7 @@ export interface ConfigWhatsApp {
   verify_token: string;
   plantilla_confirmacion: string | null;
   idioma_plantilla: string;
+  token_vence_en?: string | null;
 }
 
 // ---------- Plantilla de confirmación (una sola para todos los productos) ----------
@@ -124,7 +125,7 @@ async function llamarMeta(ruta: string, token: string, cuerpo: unknown): Promise
 // Traduce los errores más comunes de Meta a algo entendible.
 export function explicarErrorMeta(e?: { message?: string; error_user_msg?: string; code?: number }): string {
   if (!e) return "Meta respondió con un error sin detalle.";
-  if (e.code === 190) return "El token de acceso venció o no es válido. Genera uno nuevo en Meta y pégalo aquí.";
+  if (e.code === 190) return "El token de WhatsApp venció o no es válido. Entra a Configurar WhatsApp y pega uno nuevo.";
   if (e.code === 131030) return "Ese número no está en la lista de números permitidos del número de prueba. Agrégalo en Meta → Paso 1. Probar → Destinatario.";
   if (e.code === 131047) return "Pasaron más de 24 horas desde el último mensaje de la clienta: hay que usar la plantilla aprobada.";
   if (e.code === 132001) return "La plantilla no existe o todavía no está aprobada por Meta.";
@@ -145,6 +146,60 @@ export function crearPlantillaEnMeta(c: Pick<ConfigWhatsApp, "waba_id" | "access
 export function suscribirCuentaAApp(c: Pick<ConfigWhatsApp, "waba_id" | "access_token">) {
   if (!c.waba_id) return Promise.resolve({ ok: false, mensaje: "Falta el ID de la cuenta de WhatsApp Business." } as const);
   return llamarMeta(`${c.waba_id}/subscribed_apps`, c.access_token, {});
+}
+
+// ---------- Alargar el token ----------
+
+// El token que da la página de prueba de Meta dura 24 horas. Con la clave secreta de la app
+// se cambia por uno de unos 60 días. Si el token ya es permanente (usuario del sistema), se deja igual.
+
+export type TokenAlargado =
+  | { ok: true; token: string; venceEn: string | null; cambiado: boolean }
+  | { ok: false; mensaje: string };
+
+async function leerGraph(url: string): Promise<Record<string, unknown> & { error?: { message?: string; error_user_msg?: string; code?: number } }> {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    return (await r.json().catch(() => ({}))) as Record<string, unknown>;
+  } catch {
+    return { error: { message: "No se pudo conectar con Meta. Intenta otra vez en un momento." } };
+  }
+}
+
+export async function alargarToken(token: string, appSecret: string, ahora = new Date()): Promise<TokenAlargado> {
+  const t = encodeURIComponent(token);
+
+  // 1. ¿De qué app es este token?
+  const app = await leerGraph(`${GRAPH}/app?access_token=${t}`);
+  if (app.error || typeof app.id !== "string") return { ok: false, mensaje: explicarErrorMeta(app.error) };
+  const appToken = encodeURIComponent(`${app.id}|${appSecret}`);
+
+  // 2. ¿Cuándo vence? (expires_at = 0 quiere decir que no vence)
+  const info = await leerGraph(`${GRAPH}/debug_token?input_token=${t}&access_token=${appToken}`);
+  if (info.error) {
+    const e = info.error;
+    if (e.code === 190 || /secret/i.test(e.message ?? "")) {
+      return { ok: false, mensaje: "La clave secreta de la app (App secret) no coincide con la app del token. Revísala en Meta → tu app → Configuración → Básica." };
+    }
+    return { ok: false, mensaje: explicarErrorMeta(e) };
+  }
+  const datos = (info.data ?? {}) as { expires_at?: number; is_valid?: boolean };
+  if (datos.is_valid === false) return { ok: false, mensaje: "Ese token ya venció. Genera uno nuevo en Meta y pégalo otra vez." };
+  if (!datos.expires_at) return { ok: true, token, venceEn: null, cambiado: false }; // permanente
+
+  // 3. Cambiarlo por uno largo.
+  const largo = await leerGraph(
+    `${GRAPH}/oauth/access_token?grant_type=fb_exchange_token&client_id=${app.id}` +
+      `&client_secret=${encodeURIComponent(appSecret)}&fb_exchange_token=${t}`,
+  );
+  if (largo.error || typeof largo.access_token !== "string") return { ok: false, mensaje: explicarErrorMeta(largo.error) };
+  const segundos = typeof largo.expires_in === "number" ? largo.expires_in : null;
+  return {
+    ok: true,
+    token: largo.access_token,
+    venceEn: segundos ? new Date(ahora.getTime() + segundos * 1000).toISOString() : null,
+    cambiado: true,
+  };
 }
 
 // ---------- Mensajes que llegan (webhook) ----------

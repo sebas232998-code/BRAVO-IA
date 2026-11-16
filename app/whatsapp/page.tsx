@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { baseConfigurada, configsWhatsApp, listarTiendas } from "@/lib/db";
+import { fechaCorta } from "@/lib/mensajes";
 import { BOTON_CONFIRMAR, BOTON_CORREGIR, NOMBRE_PLANTILLA, TEXTO_PLANTILLA } from "@/lib/whatsapp";
 import { crearPlantilla, guardarWhatsApp, probarWhatsApp } from "./acciones";
 
 export const dynamic = "force-dynamic";
+
+const diasPara = (iso: string) => Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
 
 const oculto = (s: string | null | undefined) => (s ? `••••••${s.slice(-4)}` : "");
 
@@ -64,6 +67,13 @@ export default async function ConfigWhatsApp({
             Identificador de la cuenta de WhatsApp Business (WhatsApp Business Account ID)
             <input name="waba_id" inputMode="numeric" defaultValue={c?.waba_id ?? ""} />
           </label>
+          {c?.token_vence_en && (
+            <div className={diasPara(c.token_vence_en) <= 7 ? "problema" : "pedido-meta"}>
+              {diasPara(c.token_vence_en) <= 0
+                ? "⚠️ El token ya venció. Pega uno nuevo."
+                : `El token vence el ${fechaCorta(c.token_vence_en)} (faltan ${diasPara(c.token_vence_en)} días). Antes de esa fecha pega uno nuevo o, mejor, uno permanente.`}
+            </div>
+          )}
           <label>
             Token de acceso {c && <em>(guardado: {oculto(c.access_token)} · déjalo vacío para no cambiarlo)</em>}
             <input name="access_token" type="password" autoComplete="off" required={!c} />

@@ -25,3 +25,9 @@ export function mensajeConfirmacion(p: Pedido): string {
 // Respuesta cuando la clienta escribe CONFIRMAR (se envía unos 5 segundos después).
 export const MENSAJE_CONFIRMADO =
   "✅ ¡Listo! Tu pedido ha sido confirmado.\n\nTu pedido está siendo procesado y será despachado lo más pronto posible 🚚";
+
+// "16 de enero de 2027" (hora de Colombia)
+export function fechaCorta(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Bogota" });
+}

@@ -11,7 +11,7 @@ import {
 import { minutosParaSubir } from "@/lib/automatico";
 import type { MensajeGuardado } from "@/lib/db";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
-import { formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
+import { fechaCorta, formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
 import { ESTADOS, NOMBRE_ESTADO, type Pedido } from "@/lib/tipos";
 import type { VinculoDropi } from "@/lib/dropi";
 import {
@@ -36,7 +36,11 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const vinculos: Record<string, VinculoDropi[]> = Object.fromEntries(
     await Promise.all(tiendas.map(async (t) => [t, conectada ? await vinculosDe(t) : []] as const)),
   );
-  const conWhatsApp = new Set(conectada ? (await configsWhatsApp()).map((c) => c.tienda_dominio) : []);
+  const configs = conectada ? await configsWhatsApp() : [];
+  const conWhatsApp = new Set(configs.map((c) => c.tienda_dominio));
+  const tokensPorVencer = configs.filter(
+    (c) => c.token_vence_en && new Date(c.token_vence_en).getTime() - Date.now() < 7 * 86_400_000,
+  );
   const chats: Record<string, MensajeGuardado[]> = conectada
     ? await mensajesDePedidos(pedidos.map((p) => p.id!).filter(Boolean))
     : {};
@@ -60,6 +64,14 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
 
       {q.ok && <div className="listo caja">{q.ok}</div>}
       {q.error && <div className="problema caja">{q.error}</div>}
+
+      {tokensPorVencer.map((c) => (
+        <div key={c.tienda_dominio} className="problema caja">
+          ⚠️ El token de WhatsApp de {nombreTienda(c.tienda_dominio)}{" "}
+          {new Date(c.token_vence_en!).getTime() < Date.now() ? "ya venció" : `vence el ${fechaCorta(c.token_vence_en)}`}.{" "}
+          <Link href={`/whatsapp?tienda=${encodeURIComponent(c.tienda_dominio)}`} className="enlace">Pegar uno nuevo</Link>
+        </div>
+      ))}
 
       {!conectada && (
         <div className="aviso">
