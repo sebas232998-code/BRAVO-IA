@@ -186,6 +186,7 @@ export async function guardarMensaje(m: {
   texto: string;
   tipo: string;
   creado_en?: string;
+  dropi_id?: number | null;
 }): Promise<boolean> {
   if (m.wa_id) {
     const { data, error } = await db()
@@ -543,13 +544,93 @@ export async function ajuste(clave: string): Promise<string | null> {
 
 // ---------- Bandeja de novedades ----------
 
-export async function novedadesEscritas(): Promise<Record<number, string>> {
-  const { data, error } = await db().from("novedades_gestion").select("dropi_id, escrito_en");
+export interface GestionNovedad {
+  dropi_id: number;
+  escrito_en: string | null;
+  tienda_dominio: string | null;
+  telefono: string | null;
+  primer_nombre: string | null;
+  producto: string | null;
+  novedad: string | null;
+  mensaje_enviado_en: string | null;
+  recordatorio_en: string | null;
+  respuesta_en: string | null;
+  respuesta: string | null;
+  solucion: string | null;
+  error: string | null;
+}
+
+export async function gestionesNovedad(): Promise<Record<number, GestionNovedad>> {
+  const { data, error } = await db().from("novedades_gestion").select("*");
   if (error) return {};
-  return Object.fromEntries((data ?? []).map((r) => [Number(r.dropi_id), String(r.escrito_en)]));
+  return Object.fromEntries((data ?? []).map((r) => [Number(r.dropi_id), { ...r, dropi_id: Number(r.dropi_id) } as GestionNovedad]));
+}
+
+// Compatibilidad: cuándo se le escribió (a mano o sola).
+export async function novedadesEscritas(): Promise<Record<number, string>> {
+  const g = await gestionesNovedad();
+  return Object.fromEntries(
+    Object.values(g)
+      .filter((x) => x.escrito_en || x.mensaje_enviado_en)
+      .map((x) => [x.dropi_id, String(x.mensaje_enviado_en ?? x.escrito_en)]),
+  );
 }
 
 export async function marcarNovedadEscrita(dropiId: number, escrita: boolean) {
   if (escrita) await db().from("novedades_gestion").upsert({ dropi_id: dropiId, escrito_en: new Date().toISOString() });
-  else await db().from("novedades_gestion").delete().eq("dropi_id", dropiId);
+  else await db().from("novedades_gestion").update({ escrito_en: null }).eq("dropi_id", dropiId);
+}
+
+export async function guardarGestionNovedad(dropiId: number, cambios: Partial<GestionNovedad>) {
+  const { error } = await db().from("novedades_gestion").upsert({ dropi_id: dropiId, ...cambios });
+  if (error) throw error;
+}
+
+// Aparta la novedad para que dos vueltas del reloj no le escriban dos veces. false = ya estaba apartada.
+export async function apartarNovedad(dropiId: number, datos: Partial<GestionNovedad>): Promise<boolean> {
+  const { data, error } = await db()
+    .from("novedades_gestion")
+    .upsert({ dropi_id: dropiId, ...datos }, { onConflict: "dropi_id", ignoreDuplicates: true })
+    .select("dropi_id");
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+// La novedad más reciente a la que la app le escribió a ese número (últimos 15 días).
+export async function novedadPorTelefono(tienda: string, telefono: string): Promise<GestionNovedad | null> {
+  const { data, error } = await db()
+    .from("novedades_gestion")
+    .select("*")
+    .eq("tienda_dominio", tienda)
+    .eq("telefono", telefono)
+    .not("mensaje_enviado_en", "is", null)
+    .gte("mensaje_enviado_en", new Date(Date.now() - 15 * 86_400_000).toISOString())
+    .order("mensaje_enviado_en", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return { ...data, dropi_id: Number(data.dropi_id) } as GestionNovedad;
+}
+
+export async function chatDeNovedad(dropiId: number): Promise<{ direccion: "entrante" | "saliente"; texto: string }[]> {
+  const { data, error } = await db()
+    .from("mensajes_whatsapp")
+    .select("direccion, texto")
+    .eq("dropi_id", dropiId)
+    .order("creado_en", { ascending: true })
+    .limit(100);
+  if (error) return [];
+  return (data ?? []) as { direccion: "entrante" | "saliente"; texto: string }[];
+}
+
+export async function ultimoEntranteDeNovedad(dropiId: number): Promise<string | null> {
+  const { data } = await db()
+    .from("mensajes_whatsapp")
+    .select("wa_id")
+    .eq("dropi_id", dropiId)
+    .eq("direccion", "entrante")
+    .order("creado_en", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.wa_id ?? null;
 }

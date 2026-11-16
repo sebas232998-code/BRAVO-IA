@@ -7,9 +7,11 @@ import {
   marcarEstadoMensaje,
   pedidoAbiertoDe,
   registrarEvento,
+  guardarGestionNovedad,
+  novedadPorTelefono,
   tiendaDe,
 } from "@/lib/db";
-import { atenderConIA, confirmarPorWhatsApp, enviarAvisoConfirmado, iaConfigurada } from "@/lib/conversacion";
+import { atenderConIA, atenderNovedadConIA, confirmarPorWhatsApp, enviarAvisoConfirmado, iaConfigurada } from "@/lib/conversacion";
 import { enviarYGuardar } from "@/lib/wa-servidor";
 import {
   esConfirmacion,
@@ -74,6 +76,8 @@ export async function POST(req: Request) {
     }
 
     const pedido = await pedidoAbiertoDe(c.tienda_dominio, m.de);
+    // Si no tiene pedido abierto en la app, puede estar respondiendo a un mensaje de novedad.
+    const novedad = pedido ? null : await novedadPorTelefono(c.tienda_dominio, m.de);
     const nuevo = await guardarMensaje({
       wa_id: m.id,
       tienda_dominio: c.tienda_dominio,
@@ -83,7 +87,19 @@ export async function POST(req: Request) {
       texto: m.texto,
       tipo: m.tipo,
       creado_en: m.fecha,
+      ...(novedad ? { dropi_id: novedad.dropi_id } : {}),
     });
+    if (nuevo && novedad) {
+      await guardarGestionNovedad(novedad.dropi_id, {
+        respuesta_en: new Date().toISOString(),
+        respuesta: [novedad.respuesta, m.texto || `(${m.tipo})`].filter(Boolean).join(" · ").slice(-1000),
+      });
+      const tiendaN = await tiendaDe(c.tienda_dominio);
+      if (tiendaN?.ia_activa && iaConfigurada() && m.texto && !esCortesia(m.texto)) {
+        after(() => atenderNovedadConIA(novedad.dropi_id, c, m.de, m.id));
+      }
+      continue;
+    }
     if (!nuevo || !pedido?.id) continue; // repetido, o mensaje sin pedido abierto: solo queda guardado
 
     const id = pedido.id;

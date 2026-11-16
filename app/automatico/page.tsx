@@ -103,6 +103,17 @@ export default async function PilotoAutomatico({
               </div>
             </label>
             <label className="interruptor">
+              <input type="checkbox" name="auto_novedades" defaultChecked={t.auto_novedades} disabled={!conWhatsApp.has(t.dominio)} />
+              <div>
+                <b>Atender las novedades sola</b>
+                <span>
+                  Cuando la transportadora reporta una novedad, la app le escribe a la clienta según lo que pasó (sin culparla),
+                  espera su respuesta y le recuerda a las 12 horas que el pedido está a punto de devolverse. La solución te
+                  queda en Novedades para aplicarla en Dropi. Necesita las plantillas de novedades aprobadas por Meta.
+                </span>
+              </div>
+            </label>
+            <label className="interruptor">
               <input type="checkbox" name="auto_seguimiento" defaultChecked={t.auto_seguimiento} disabled={!conWhatsApp.has(t.dominio)} />
               <div>
                 <b>Seguimiento a quien no responde</b>

@@ -102,4 +102,5 @@ export interface Tienda {
   descuento_horas: number;
   ia_activa: boolean;
   cerebro: string | null;
+  auto_novedades: boolean;
 }

@@ -170,3 +170,5 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 @keyframes caer { to { transform: translateY(110vh) rotate(720deg); } }
 .confeti-mensaje { position: absolute; left: 16px; right: 16px; top: 38%; text-align: center; background: var(--tarjeta); color: var(--texto); border: 1px solid #00E676; box-shadow: 0 0 24px rgba(0,230,118,.4); border-radius: 16px; padding: 18px; font-weight: 700; font-size: 18px; }
 @media (prefers-reduced-motion: reduce) { .confeti span { display: none; } }
+.seguimiento-novedad { display: grid; gap: 4px; font-size: 13px; color: var(--suave); margin-top: 8px; }
+.respuesta-clienta { color: var(--texto); }

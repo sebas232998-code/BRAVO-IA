@@ -14,6 +14,7 @@ import { tocaEnviarConfirmacion, tocaSubirADropi } from "@/lib/automatico";
 import { enviarConfirmacion, enviarSeguimiento, marcarSinRespuesta, subirPedido } from "@/lib/flujo";
 import { siguientePaso } from "@/lib/seguimiento";
 import { enviarAvisoConfirmado } from "@/lib/conversacion";
+import { atenderNovedades } from "@/lib/novedades-auto";
 
 // Reloj de tareas del piloto automático. Supabase (pg_cron) llama aquí cada minuto.
 // 1. Envía la confirmación por WhatsApp a los pedidos nuevos.
@@ -38,7 +39,8 @@ async function vuelta() {
   const ahora = new Date();
   const resumen = { confirmaciones: 0, errores_whatsapp: 0, subidos_dropi: 0, errores_dropi: 0, seguimientos: 0, sin_respuesta: 0, avisos_confirmado: 0 };
 
-  for (const t of await tiendasConInterruptores()) {
+  const tiendas = await tiendasConInterruptores();
+  for (const t of tiendas) {
     if (t.auto_confirmacion) {
       const c = await configWhatsAppDe(t.dominio);
       if (c) {
@@ -89,6 +91,13 @@ async function vuelta() {
       await enviarAvisoConfirmado(c, p.telefono, p.id!, true);
       resumen.avisos_confirmado++;
     }
+  }
+
+  // Novedades: escribirle a la clienta según la novedad y recordarle si no responde.
+  try {
+    Object.assign(resumen, await atenderNovedades(tiendas, ahora));
+  } catch (e) {
+    console.log("[tareas] novedades", e);
   }
 
   await registrarLatido("tareas", resumen);

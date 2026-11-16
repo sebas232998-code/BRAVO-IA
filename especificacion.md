@@ -369,3 +369,11 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Panel (Entregas): "🏆 Leyendas: X este mes · Y en total" y, si la tasa del rango está en Leyenda, botón "Compartir mi Leyenda 🔥".
 - `/leyenda`: imagen para historias (1080 × 1920, `/api/leyenda`) con el toro, "LEYENDA", el porcentaje, las fechas y la marca Bravo IA, sin datos de clientas ni plata. Botón para compartir (Instagram, TikTok, WhatsApp desde el celular) o descargar.
 - Confeti al abrir el panel cuando la semana pasada fue Leyenda ("¡Semana brava! 🔥 La semana pasada entregaste el X %"), máximo una vez por semana en cada celular.
+
+## Avance: novedades atendidas solas (pedido de Sebastián, 16 nov 2026)
+
+- Interruptor por tienda "Atender las novedades sola" (Piloto automático, viene apagado; necesita WhatsApp y las plantillas `novedad_entrega` y `novedad_recordatorio` aprobadas por Meta, que se crean con el mismo botón de las de seguimiento).
+- El reloj de tareas, de 7 a. m. a 9 p. m., le escribe a cada clienta con novedad abierta (de los estados de Dropi) un mensaje según lo que dice la novedad, sin culparla: no había nadie en casa, no se ubicó la dirección, quedó en oficina, la entrega se reprogramó (no se le dice algo que contradiga la novedad), no se pudo contactar, no se completó el pago, no le interesa u otra. Siempre: el paquete ya está en su ciudad y qué se necesita para entregárselo.
+- Espera la respuesta. Si no responde en 12 horas, un solo recordatorio: "Tu pedido de X está a punto de ser devuelto. Por favor respóndenos lo antes posible…".
+- Si responde, se guarda su respuesta en la bandeja. Con la IA prendida, Sonnet entiende la solución (nueva dirección, otro horario, otra persona, oficina, otro teléfono), le contesta corto y la deja escrita en la bandeja ("✅ Nueva dirección: … — aplícalo en Dropi"). La IA no toca Dropi; si la API de Dropi permite resolver novedades, eso se agrega después.
+- Si el vendedor ya le escribió a mano ("Ya le escribí"), la app no le repite el mensaje.

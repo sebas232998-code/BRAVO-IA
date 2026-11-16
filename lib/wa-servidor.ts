@@ -8,6 +8,7 @@ export async function enviarYGuardar(
   cuerpo: unknown,
   textoHistorial: string,
   pedidoId: string | null,
+  dropiId: number | null = null,
 ): Promise<RespuestaMeta> {
   const r = await enviarMensaje(c, cuerpo);
   if (r.ok) {
@@ -19,6 +20,7 @@ export async function enviarYGuardar(
       direccion: "saliente",
       texto: textoHistorial,
       tipo: "texto",
+      ...(dropiId ? { dropi_id: dropiId } : {}),
     });
   } else if (pedidoId) {
     await registrarEvento(pedidoId, "error_whatsapp", { mensaje: r.mensaje });

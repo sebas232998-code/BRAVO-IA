@@ -7,13 +7,18 @@ import {
   chatDe,
   guardarVariantes,
   obtenerPedido,
+  chatDeNovedad,
+  gestionesNovedad,
+  guardarGestionNovedad,
   registrarEvento,
   tiendaDe,
+  ultimoEntranteDeNovedad,
 } from "./db";
 import { variantesDePedido } from "./catalogo";
 import { atenderMensaje, explicarErrorIA, llamarClaudeReal, type LlamarClaude } from "./ia/agente";
 import { completarRespuesta } from "./ia/cambios";
 import { clasificarReal, type Clasificar } from "./ia/clasificar";
+import { atenderRespuestaNovedad } from "./ia/novedad";
 import { MENSAJE_CONFIRMADO } from "./mensajes";
 import { decidirDescuento, mensajeDescuentoVencido } from "./seguimiento";
 import type { Pedido } from "./tipos";
@@ -190,4 +195,32 @@ async function aplicarResultado(
   }
 
   if (r.texto) await responder(c, telefono, r.texto, id);
+}
+
+// La clienta respondió a un mensaje de novedad: la IA entiende la solución y se la deja al vendedor.
+export async function atenderNovedadConIA(dropiId: number, c: ConfigWhatsApp, telefono: string, waId: string | null, llamar?: LlamarClaude) {
+  await espera(4000); // si escribe varios mensajes seguidos, se responde al último
+  const chat = await chatDeNovedad(dropiId);
+  const entrantes = chat.filter((m) => m.direccion === "entrante");
+  const ultimoWa = (await ultimoEntranteDeNovedad(dropiId)) ?? null;
+  if (waId && ultimoWa && ultimoWa !== waId) return;
+  const g = (await gestionesNovedad())[dropiId];
+  if (!g || entrantes.length === 0) return;
+  const tienda = await tiendaDe(c.tienda_dominio);
+  try {
+    const r = await atenderRespuestaNovedad(
+      llamar ?? llamarClaudeReal(),
+      { novedad: g.novedad ?? "Novedad de entrega", producto: g.producto },
+      chat,
+      tienda?.cerebro ?? null,
+    );
+    if (r.solucion) await guardarGestionNovedad(dropiId, { solucion: r.solucion });
+    if (r.escalar) await guardarGestionNovedad(dropiId, { error: `La IA te necesita: ${r.escalar}` });
+    if (r.texto) {
+      await espera(Math.min(2500 + r.texto.length * 40, 12000));
+      await enviarYGuardar(c, telefono, mensajeTexto(telefono, r.texto), r.texto, null, dropiId);
+    }
+  } catch (e) {
+    await guardarGestionNovedad(dropiId, { error: `La IA no pudo responder: ${explicarErrorIA(e)}` });
+  }
 }

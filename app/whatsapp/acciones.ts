@@ -6,6 +6,7 @@ import { configWhatsAppDe, guardarConfigWhatsApp } from "@/lib/db";
 import { normalizarTelefono } from "@/lib/telefono";
 import { fechaCorta } from "@/lib/mensajes";
 import { PLANTILLAS_SEGUIMIENTO } from "@/lib/seguimiento";
+import { PLANTILLAS_NOVEDAD } from "@/lib/novedades";
 import { alargarToken, crearPlantillaSeguimientoEnMeta, suscribirCuentaAApp, crearPlantillaEnMeta, enviarMensaje, IDIOMA_PLANTILLA, mensajeHolaMundo, NOMBRE_PLANTILLA } from "@/lib/whatsapp";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").replace(/\s+/g, "").trim();
@@ -89,10 +90,10 @@ export async function crearPlantillasSeguimiento(f: FormData) {
   const c = await configWhatsAppDe(tienda);
   if (!c) volver(tienda, "error", "Primero guarda los datos de WhatsApp.");
   const fallas: string[] = [];
-  for (const [nombre, plantilla] of Object.entries(PLANTILLAS_SEGUIMIENTO)) {
+  for (const [nombre, plantilla] of Object.entries({ ...PLANTILLAS_SEGUIMIENTO, ...PLANTILLAS_NOVEDAD })) {
     const r = await crearPlantillaSeguimientoEnMeta(c, nombre, plantilla);
     if (!r.ok && !/already exists|ya existe|duplicate/i.test(r.mensaje)) fallas.push(`${nombre}: ${r.mensaje}`);
   }
   if (fallas.length) volver(tienda, "error", `No se pudieron crear todas: ${fallas.join(" · ")}`);
-  volver(tienda, "ok", "Plantillas de seguimiento enviadas a Meta para revisión. Normalmente las aprueban en unos minutos.");
+  volver(tienda, "ok", "Plantillas de seguimiento y novedades enviadas a Meta para revisión. Normalmente las aprueban en unos minutos.");
 }

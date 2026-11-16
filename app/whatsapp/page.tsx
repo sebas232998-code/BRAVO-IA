@@ -4,6 +4,7 @@ import { baseConfigurada, configsWhatsApp, listarTiendas } from "@/lib/db";
 import { fechaCorta } from "@/lib/mensajes";
 import { BOTON_CONFIRMAR, BOTON_CORREGIR, NOMBRE_PLANTILLA, TEXTO_PLANTILLA } from "@/lib/whatsapp";
 import { PLANTILLAS_SEGUIMIENTO } from "@/lib/seguimiento";
+import { PLANTILLAS_NOVEDAD } from "@/lib/novedades";
 import { crearPlantilla, crearPlantillasSeguimiento, guardarWhatsApp, probarWhatsApp } from "./acciones";
 
 export const dynamic = "force-dynamic";
@@ -124,12 +125,12 @@ export default async function ConfigWhatsApp({
           </section>
 
           <section className="pedido">
-            <div className="pedido-nombre">5. Plantillas de seguimiento</div>
+            <div className="pedido-nombre">5. Plantillas de seguimiento y novedades</div>
             <p className="pedido-meta">
               Para escribirle a la clienta que no ha respondido (Meta exige plantillas aprobadas). Las tres se crean con
               un toque. La del descuento Meta la clasifica como de marketing, que cuesta un poco más por mensaje.
             </p>
-            {Object.entries(PLANTILLAS_SEGUIMIENTO).map(([nombre, pl]) => (
+            {Object.entries({ ...PLANTILLAS_SEGUIMIENTO, ...PLANTILLAS_NOVEDAD }).map(([nombre, pl]) => (
               <details key={nombre}>
                 <summary>{nombre}</summary>
                 <pre className="mensaje">{pl.texto}</pre>
@@ -138,7 +139,7 @@ export default async function ConfigWhatsApp({
             <p className="pedido-meta">Botones: [{BOTON_CONFIRMAR}] [{BOTON_CORREGIR}]</p>
             <form action={crearPlantillasSeguimiento}>
               <input type="hidden" name="tienda" value={tienda} />
-              <button type="submit">Crear plantillas de seguimiento en Meta</button>
+              <button type="submit">Crear plantillas de seguimiento y novedades en Meta</button>
             </form>
           </section>
         </>

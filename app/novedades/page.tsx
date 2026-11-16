@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { baseConfigurada, novedadesEscritas } from "@/lib/db";
+import { baseConfigurada, gestionesNovedad, novedadesEscritas, tiendasConInterruptores } from "@/lib/db";
 import { dropiConfigurado } from "@/lib/dropi";
 import { enlaceWhatsApp, mensajeNovedad, novedadesAbiertas, type Novedad } from "@/lib/novedades";
 import { marcarEscrita } from "./acciones";
@@ -25,6 +25,8 @@ export default async function Novedades({ searchParams }: { searchParams: Promis
   }
   const { novedades, error } = await novedadesAbiertas();
   const escritas = await novedadesEscritas();
+  const gestiones = await gestionesNovedad();
+  const solas = (await tiendasConInterruptores()).some((t) => t.auto_novedades);
   const tiendas = [...new Set(novedades.map((n) => n.tienda).filter(Boolean) as string[])].sort();
   const tienda = q.tienda && tiendas.includes(q.tienda) ? q.tienda : null;
   // Primero las que llevan más tiempo y a las que no les has escrito.
@@ -44,6 +46,12 @@ export default async function Novedades({ searchParams }: { searchParams: Promis
         que salves es un pedido que no se devuelve.
       </p>
       {error && <div className="problema caja">{error}</div>}
+      <p className="pedido-meta">
+        {solas
+          ? "✓ La app les escribe sola (según la novedad), espera la respuesta y les recuerda a las 12 horas si no responden."
+          : "Por ahora les escribes tú con el botón. Para que la app les escriba sola, prende “Atender las novedades sola” en "}
+        {!solas && <Link href="/automatico" className="enlace">Piloto automático</Link>}
+      </p>
 
       {tiendas.length > 1 && (
         <div className="filtros">
@@ -78,6 +86,21 @@ export default async function Novedades({ searchParams }: { searchParams: Promis
             <div className="problema">⚠️ {titulo(n)}</div>
             {n.producto && <div className="pedido-meta">{n.producto}</div>}
             {n.direccion && <div className="pedido-meta">Dirección: {n.direccion}</div>}
+            {(() => {
+              const g = gestiones[n.id];
+              if (!g) return null;
+              return (
+                <div className="seguimiento-novedad">
+                  {g.mensaje_enviado_en && <div>📨 La app le escribió {haceCuanto(g.mensaje_enviado_en)}</div>}
+                  {g.recordatorio_en && <div>⏰ Recordatorio enviado {haceCuanto(g.recordatorio_en)}</div>}
+                  {g.respuesta && <div className="respuesta-clienta">💬 La clienta respondió: “{g.respuesta}”</div>}
+                  {g.solucion && (
+                    <div className="listo">✅ {g.solucion} — aplícalo en Dropi (guía {n.guia ?? "-"}).</div>
+                  )}
+                  {g.error && <div className="problema">{g.error}</div>}
+                </div>
+              );
+            })()}
 
             <details>
               <summary>Ver el mensaje</summary>
