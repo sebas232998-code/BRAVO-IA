@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   baseConfigurada,
   configsWhatsApp,
+  ordenesDropiDesde,
   listarPedidos,
   mensajesDePedidos,
   nombresTiendas,
@@ -9,6 +10,7 @@ import {
   vinculosDe,
 } from "@/lib/db";
 import { minutosParaSubir } from "@/lib/automatico";
+import { etapa, tieneNovedad } from "@/lib/dropi-estados";
 import { problemasDe } from "@/lib/bandeja";
 import { problemaTelefono } from "@/lib/telefono";
 import type { MensajeGuardado } from "@/lib/db";
@@ -61,6 +63,12 @@ export default async function Inicio({
     : {};
   const subeSola = new Set(conectada ? (await tiendasConInterruptores()).filter((t) => t.auto_dropi).map((t) => t.dominio) : []);
   const ahora = new Date();
+  // Cuántas novedades abiertas hay (de lo que se sincronizó de Dropi, sin datos personales).
+  const novedadesAbiertasN = conectada
+    ? (await ordenesDropiDesde(new Date(Date.now() - 30 * 86_400_000))).filter(
+        (o) => !o.es_prueba && etapa(o.estado) === "en_camino" && tieneNovedad(o),
+      ).length
+    : 0;
   // ¿Ya se le mandó la confirmación? (para no reenviarla por error)
   const yaSeEnvio = (p: Pedido) =>
     Boolean(p.confirmacion_enviada_en) || (chats[p.id!] ?? []).some((m) => m.direccion === "saliente");
@@ -75,6 +83,7 @@ export default async function Inicio({
       </h1>
       <p className="subtitulo">
         Pedidos de tus tiendas · <Link href="/panel" className="enlace">Panel</Link> ·{" "}
+        <Link href="/novedades" className="enlace">Novedades{novedadesAbiertasN > 0 ? ` (${novedadesAbiertasN})` : ""}</Link> ·{" "}
         <Link href="/automatico" className="enlace">Piloto automático</Link> ·{" "}
         <Link href="/whatsapp" className="enlace">Configurar WhatsApp</Link>
       </p>

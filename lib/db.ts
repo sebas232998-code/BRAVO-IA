@@ -540,3 +540,16 @@ export async function ajuste(clave: string): Promise<string | null> {
   if (error) return null; // si aún no se corrió la migración 013
   return data?.valor ?? null;
 }
+
+// ---------- Bandeja de novedades ----------
+
+export async function novedadesEscritas(): Promise<Record<number, string>> {
+  const { data, error } = await db().from("novedades_gestion").select("dropi_id, escrito_en");
+  if (error) return {};
+  return Object.fromEntries((data ?? []).map((r) => [Number(r.dropi_id), String(r.escrito_en)]));
+}
+
+export async function marcarNovedadEscrita(dropiId: number, escrita: boolean) {
+  if (escrita) await db().from("novedades_gestion").upsert({ dropi_id: dropiId, escrito_en: new Date().toISOString() });
+  else await db().from("novedades_gestion").delete().eq("dropi_id", dropiId);
+}

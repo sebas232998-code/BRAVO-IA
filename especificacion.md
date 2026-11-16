@@ -354,3 +354,10 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Fechas: por defecto "Últimos 30 días"; también 7 y 90 días y "Escoger fechas" (desde / hasta). La comparación es contra el rango anterior del mismo tamaño.
 - Solo aparecen las tiendas que tienen pedidos en las fechas escogidas (las viejas no salen); por defecto, la tienda de la app (PETION).
 - Pedidos de prueba (pedido de Sebastián, 16 nov 2026): al leer Dropi, la app marca como prueba los pedidos a nombre de los "nombres de prueba" (tabla `ajustes`, clave `nombres_prueba`; hoy "Sebastian Toro") o que digan "prueba"/"test" en el nombre o las notas, sin guardar el nombre. No cuentan en el panel, que avisa "Sin contar N pedidos de prueba".
+
+## Avance: bandeja de novedades (16 nov 2026, Fase 2 adelantada)
+
+- Pantalla `/novedades` (enlace "Novedades (N)" en Pedidos): pedidos en camino con novedad de la transportadora (o "Reclame en oficina"), con tienda, transportadora, guía, ciudad, producto, dirección y hace cuánto. Primero las más viejas y a las que no se les ha escrito.
+- Botón "Escribirle por WhatsApp 💬": abre el WhatsApp normal del vendedor con el mensaje ya escrito según la novedad (repartidor no la encontró, dirección incompleta, reclame en oficina, no le interesa, otra), siguiendo el tono: la novedad es de la transportadora, nunca de la clienta; se le cuenta que el paquete ya está en su ciudad y se le pide confirmar dirección o un lugar alterno. No necesita el token de Meta.
+- "Ya le escribí" marca la novedad (tabla `novedades_gestion`, solo el número del pedido).
+- Los datos de contacto se leen de Dropi al abrir la pantalla y no se guardan. La corrección o el nuevo intento se hacen en Dropi (no se sabe aún si la API lo permite).

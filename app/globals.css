@@ -160,3 +160,5 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 .fechas { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-bottom: 12px; }
 .fechas label { display: grid; gap: 4px; font-size: 13px; color: var(--suave); }
 .fechas input { width: auto; color-scheme: dark; }
+.novedad-escrita { opacity: 0.6; }
+.boton-wa { display: inline-block; padding: 10px 18px; }
