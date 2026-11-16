@@ -19,5 +19,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/webhooks|api/tareas|api/dropi/diagnostico|privacidad|eliminar-datos|manifest.webmanifest|icon-.*\\.png|_next/static|_next/image).*)"],
+  matcher: ["/((?!api/webhooks|api/tareas|api/dropi/diagnostico|api/dropi/sincronizar|privacidad|eliminar-datos|manifest.webmanifest|icon-.*\\.png|_next/static|_next/image).*)"],
 };

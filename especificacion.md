@@ -334,7 +334,15 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - "Tus números por producto": costo del proveedor, flete de ida, CPA y tasa mínima propia. La app calcula el mínimo con (flete + CPA) ÷ (precio − costo) y lo sugiere ("Según tus costos, tu mínimo es 44 %").
 - "Ver cómo se verá con datos": llena el panel con números de ejemplo para ver el diseño.
 - El panel va en 3 pestañas, cada tema junto (pedido de Sebastián, 16 nov 2026): "Entregas" (tasa de entrega con semáforo y "Tu tasa mínima · Cambiar" ahí mismo junto a la rayita; despachados, entregados, devueltos/no entregados, con novedad; tasas de novedad, rescate y real de venta), "Confirmación" (tasa de confirmación; recibidos, por confirmar, confirmados, no confirmados y rescatadas por Bravo IA) y "Mis números" (costos por producto).
-- Pendiente: los estados de entrega vienen de Dropi. Shopify no los tiene (la app de Dropi solo pone la etiqueta "Order sent to dropi"). Opciones: leerlos por la API de Dropi o subir el reporte de Excel que exporta Dropi.
+- Los estados de entrega vienen de Dropi (Shopify no los tiene).
 - Cambio (pedido de Sebastián, 16 nov 2026): las ventas rescatadas no van en grande arriba; son una cifra más en "Resumen" ("Rescatadas por Bravo IA"), y lo primero que se ve es la tasa de entrega.
 - Cada tarjeta del panel da información útil, como las buenas apps de análisis (pedido de Sebastián, 16 nov 2026): el número con su color, la comparación con el período anterior ("▲ 3 puntos vs la semana pasada", verde si mejora y rojo si empeora; en novedad, bajar es bueno) y un consejo de una línea según la zona ("¡Semana brava! 🔥", "Atiende rápido las 12 novedades abiertas…", "Prende el seguimiento a quien no responde…").
 - Si no hay tasa mínima, sale un botón amarillo "+ Agrega tu tasa mínima de efectividad para no perder dinero" que abre el campo ahí mismo; si ya está, "Tu tasa mínima para no perder dinero: 44 % · Cambiar".
+
+## Avance: estados de Dropi automáticos (16 nov 2026)
+
+- Verificado: la API de integraciones de Dropi deja LEER los pedidos (GET /orders/myorders?result_number=&start=) con el mismo token. Trae estado (ENTREGADO, DEVOLUCION, EN TRANSITO, EN REPARTO, RECLAME EN OFICINA, CANCELADO, PENDIENTE CONFIRMACION, GUIA_GENERADA…), novedad de la transportadora, transportadora, ciudad, tienda, producto, precio del proveedor, total y flete. Incluye las 4 tiendas de Sebastián (PETION, ruumbo, MERRYLAND, multifem), también los pedidos que subió la app de Dropi.
+- Cada 30 minutos Supabase llama a `/api/dropi/sincronizar`, que guarda los pedidos en `dropi_ordenes` SIN datos personales (ni nombre, ni teléfono, ni dirección). La primera vez trae 4 meses; después, los últimos 45 días.
+- El panel de Entregas usa esos datos: filtro por tienda, tasa de entrega/novedad/rescate/real de venta reales, "en camino", y "¿Dónde se pierden?" (tasa de entrega por transportadora, ciudad y producto, de peor a mejor, últimos 45 días).
+- La tasa mínima se calcula sola con los promedios reales de Dropi (venta, costo del proveedor y flete por pedido) si el vendedor no escribe los suyos; solo falta el CPA para hablar de "perder plata".
+- `/api/dropi/diagnostico` (solo lectura, protegido) muestra la estructura de la API sin datos personales.

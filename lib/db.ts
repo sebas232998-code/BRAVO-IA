@@ -3,6 +3,7 @@ import type { Pedido, Tienda } from "./tipos";
 import type { VinculoDropi } from "./dropi";
 import type { ConfigWhatsApp } from "./whatsapp";
 import type { Variante } from "./catalogo";
+import type { OrdenDropiLeida } from "./dropi-estados";
 
 let cliente: SupabaseClient | null = null;
 
@@ -472,4 +473,47 @@ export async function productosDelCatalogo(): Promise<{ tienda_dominio: string; 
     if (!vistos.has(k)) vistos.set(k, { tienda_dominio: v.tienda_dominio, shopify_product_id: Number(v.shopify_product_id), producto: v.producto, precio: Number(v.precio) });
   }
   return [...vistos.values()];
+}
+
+// ---------- Estados de Dropi ----------
+
+export async function guardarOrdenesDropi(ordenes: OrdenDropiLeida[]) {
+  for (let i = 0; i < ordenes.length; i += 200) {
+    const lote = ordenes.slice(i, i + 200).map((o) => ({ ...o, sincronizado_en: new Date().toISOString() }));
+    const { error } = await db().from("dropi_ordenes").upsert(lote, { onConflict: "id" });
+    if (error) throw error;
+  }
+}
+
+export async function ordenesDropiDesde(desde: Date, hasta: Date | null = null): Promise<OrdenDropiLeida[]> {
+  const salida: OrdenDropiLeida[] = [];
+  for (let desdeFila = 0; desdeFila < 20000; desdeFila += 1000) {
+    let q = db().from("dropi_ordenes").select("*").gte("creado_en", desde.toISOString()).order("creado_en", { ascending: false });
+    if (hasta) q = q.lt("creado_en", hasta.toISOString());
+    const { data, error } = await q.range(desdeFila, desdeFila + 999);
+    if (error) return salida; // si aún no se corrió la migración 011
+    const n = (x: unknown) => (x === null || x === undefined ? null : Number(x));
+    for (const r of data ?? []) {
+      salida.push({ ...r, id: Number(r.id), dropi_product_id: n(r.dropi_product_id), total: n(r.total), flete: n(r.flete), costo_producto: n(r.costo_producto) } as OrdenDropiLeida);
+    }
+    if ((data ?? []).length < 1000) break;
+  }
+  return salida;
+}
+
+export async function hayOrdenesDropi(): Promise<boolean> {
+  const { count, error } = await db().from("dropi_ordenes").select("id", { count: "exact", head: true });
+  return !error && (count ?? 0) > 0;
+}
+
+// Vínculos Shopify → Dropi de todas las tiendas, con el producto de Shopify (para cruzar con los pedidos de Dropi).
+export async function todosLosVinculos(): Promise<{ tienda_dominio: string; shopify_product_id: number; dropi_product_id: number }[]> {
+  const [{ data: vs }, { data: cat }] = await Promise.all([
+    db().from("vinculos_dropi").select("tienda_dominio, shopify_variant_id, dropi_product_id"),
+    db().from("catalogo_variantes").select("tienda_dominio, shopify_variant_id, shopify_product_id"),
+  ]);
+  return (vs ?? []).flatMap((v) => {
+    const c = (cat ?? []).find((x) => x.tienda_dominio === v.tienda_dominio && Number(x.shopify_variant_id) === Number(v.shopify_variant_id));
+    return c ? [{ tienda_dominio: v.tienda_dominio, shopify_product_id: Number(c.shopify_product_id), dropi_product_id: Number(v.dropi_product_id) }] : [];
+  });
 }

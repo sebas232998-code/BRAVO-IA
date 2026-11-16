@@ -25,3 +25,9 @@ select cron.schedule(
 );
 
 -- Para apagarlo:  select cron.unschedule('bravo-ia-tareas');
+
+-- Estados de Dropi cada 30 minutos (solo lectura):
+-- select cron.schedule('bravo-ia-dropi', '*/30 * * * *', $$ select net.http_get(
+--   url := 'https://TU-APP.vercel.app/api/dropi/sincronizar',
+--   headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'bravo_cron_secret')),
+--   timeout_milliseconds := 60000); $$);

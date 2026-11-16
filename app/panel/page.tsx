@@ -5,8 +5,12 @@ import {
   numerosProductos,
   pedidosConIA,
   productosDelCatalogo,
+  ordenesDropiDesde,
   tiendasConInterruptores,
+  todosLosVinculos,
+  ultimoLatido,
 } from "@/lib/db";
+import { porGrupo, promediosDropi, tasasDropi, type OrdenDropiLeida } from "@/lib/dropi-estados";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { formatoPesos } from "@/lib/mensajes";
 import {
@@ -18,7 +22,7 @@ import {
   periodoAnterior,
   type Periodo,
 } from "@/lib/metricas";
-import { avisoMinimo, nivelEntrega, tasaMinima, tasaMinimaCalculada } from "@/lib/tasas";
+import { avisoMinimo, colorTasa, nivelEntrega, tasaMinima, tasaMinimaCalculada } from "@/lib/tasas";
 import { guardarNumeros, guardarTasaMinima } from "./acciones";
 import { CirculoTasa } from "./circulo";
 
@@ -38,6 +42,14 @@ function Cifra({ valor, nombre, amarilla }: { valor: number | string; nombre: st
   );
 }
 
+function haceCuanto(fecha: string): string {
+  const min = Math.round((Date.now() - new Date(fecha).getTime()) / 60_000);
+  if (min < 1) return "hace menos de un minuto";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  return h === 1 ? "hace 1 hora" : `hace ${h} horas`;
+}
+
 function Comparacion({ texto, bueno }: { texto: string; bueno: boolean | null }) {
   return <div className={`comparacion ${bueno === null ? "" : bueno ? "sube" : "baja"}`}>{texto}</div>;
 }
@@ -55,7 +67,7 @@ function TasaPequena({ nombre, valor, explica, invertida }: { nombre: string; va
 export default async function Panel({
   searchParams,
 }: {
-  searchParams: Promise<{ periodo?: string; ejemplo?: string; tasa?: string; vista?: string; cambiar?: string }>;
+  searchParams: Promise<{ periodo?: string; ejemplo?: string; tasa?: string; vista?: string; cambiar?: string; tienda?: string }>;
 }) {
   const q = await searchParams;
   const periodo: Periodo = (["hoy", "semana", "mes"] as const).find((x) => x === q.periodo) ?? "semana";
@@ -64,7 +76,7 @@ export default async function Panel({
   // Arma el enlace conservando lo demás (período, ejemplo, pestaña).
   const enlace = (cambios: Record<string, string | null>) => {
     const u = new URLSearchParams();
-    const todo = { vista: q.vista ?? null, periodo: q.periodo ?? null, ejemplo: q.ejemplo ?? null, tasa: q.tasa ?? null, ...cambios };
+    const todo = { vista: q.vista ?? null, periodo: q.periodo ?? null, tienda: q.tienda ?? null, ejemplo: q.ejemplo ?? null, tasa: q.tasa ?? null, ...cambios };
     for (const [k, v] of Object.entries(todo)) if (v && !(k === "vista" && v === "entregas")) u.set(k, v);
     const t = u.toString();
     return t ? `/panel?${t}` : "/panel";
@@ -76,7 +88,33 @@ export default async function Panel({
   const m = calcularMetricas(pedidos, inicioPeriodo(periodo), conIA);
   const anterior = periodoAnterior(periodo);
   const antes = calcularMetricas(pedidos, anterior.desde, conIA, anterior.hasta);
-  const seguimientoPrendido = conectada ? (await tiendasConInterruptores()).some((t) => t.auto_seguimiento) : false;
+  let enCamino = 0;
+  const tiendasApp = conectada ? await tiendasConInterruptores() : [];
+  const seguimientoPrendido = tiendasApp.some((t) => t.auto_seguimiento);
+
+  // Estados reales de Dropi (se sincronizan solos cada 30 minutos).
+  const latidoDropi = conectada ? await ultimoLatido("dropi") : null;
+  const desde = inicioPeriodo(periodo);
+  const todasDropi = conectada && !ejemplo ? await ordenesDropiDesde(anterior.desde) : [];
+  const tiendasDropi = [...new Set(todasDropi.map((o) => o.tienda).filter(Boolean) as string[])].sort();
+  const mismaTienda = (a: string | null, b: string | null) => (a ?? "").toLowerCase() === (b ?? "").toLowerCase();
+  // Por defecto, la tienda de la app (si está en Dropi); "todas" muestra todo junto.
+  const porDefecto = tiendasApp.length === 1 ? tiendasDropi.find((t) => mismaTienda(t, tiendasApp[0].nombre)) ?? "todas" : "todas";
+  const tiendaSel = q.tienda && (q.tienda === "todas" || tiendasDropi.includes(q.tienda)) ? q.tienda : porDefecto;
+  const filtrar = (os: OrdenDropiLeida[]) => (tiendaSel === "todas" ? os : os.filter((o) => mismaTienda(o.tienda, tiendaSel)));
+  const ordenesPeriodo = filtrar(todasDropi.filter((o) => new Date(o.creado_en) >= desde));
+  const ordenesAntes = filtrar(todasDropi.filter((o) => new Date(o.creado_en) >= anterior.desde && new Date(o.creado_en) < anterior.hasta));
+  const conDropi = todasDropi.length > 0;
+  if (conDropi) {
+    const td = tasasDropi(ordenesPeriodo);
+    const ta = tasasDropi(ordenesAntes);
+    Object.assign(m, { despachados: td.despachados, entregados: td.entregados, devueltos: td.devueltos, conNovedad: td.conNovedad });
+    enCamino = td.enCamino;
+    m.tasas = { ...m.tasas, entrega: td.entrega, novedad: td.novedad, rescate: td.rescate, realVenta: td.realVenta };
+    antes.tasas = { ...antes.tasas, entrega: ta.entrega, novedad: ta.novedad };
+  }
+  // Para "¿Dónde se pierden?" se mira el último mes completo (con menos datos no dice nada).
+  const ordenesMes = filtrar(todasDropi.filter((o) => new Date(o.creado_en) >= new Date(Date.now() - 45 * 86_400_000)));
   // "Ver cómo se verá": números de ejemplo (no son tuyos) para mostrar el diseño.
   if (ejemplo) {
     const t = Math.min(100, Math.max(0, Number(q.tasa ?? 91) || 91));
@@ -91,15 +129,29 @@ export default async function Panel({
 
   const productos = conectada ? await productosDelCatalogo() : [];
   const numeros = conectada ? await numerosProductos() : [];
+  const vinculos = conectada ? await todosLosVinculos() : [];
   const filas = productos.map((p) => {
     const n = numeros.find((x) => x.tienda_dominio === p.tienda_dominio && x.shopify_product_id === p.shopify_product_id);
-    const datos = { precio: p.precio, costo: n?.costo ?? null, flete: n?.flete ?? null, cpa: n?.cpa ?? null, tasa_minima: n?.tasa_minima ?? null };
-    return { ...p, datos, minimo: tasaMinima(datos), sugerido: tasaMinimaCalculada(datos) };
+    // Promedios reales de Dropi para este producto (venta, costo del proveedor y flete por pedido).
+    const idsDropi = new Set(vinculos.filter((v) => v.tienda_dominio === p.tienda_dominio && v.shopify_product_id === p.shopify_product_id).map((v) => v.dropi_product_id));
+    const deDropi = promediosDropi(todasDropi.filter((o) => o.dropi_product_id !== null && idsDropi.has(o.dropi_product_id)));
+    // Lo que escribió el vendedor manda; si no escribió, se usa lo de Dropi.
+    const datos = {
+      precio: deDropi?.venta ?? p.precio,
+      costo: n?.costo ?? deDropi?.costo ?? null,
+      flete: n?.flete ?? deDropi?.flete ?? null,
+      cpa: n?.cpa ?? null,
+      tasa_minima: n?.tasa_minima ?? null,
+    };
+    const tiendaNombre = tiendasApp.find((t) => t.dominio === p.tienda_dominio)?.nombre ?? null;
+    return { ...p, n, deDropi, tiendaNombre, datos, minimo: tasaMinima(datos), sugerido: tasaMinimaCalculada(datos) };
   });
-  // Con un solo producto, su mínimo es la rayita de la tasa de entrega general.
-  const unico = filas.length === 1 ? filas[0] : null;
+  // La rayita: el mínimo del producto de la tienda escogida (si esa tienda tiene un solo producto en la app).
+  const deLaTienda = filas.filter((f) => tiendaSel !== "todas" ? mismaTienda(f.tiendaNombre, tiendaSel) : filas.length === 1);
+  const unico = deLaTienda.length === 1 ? deLaTienda[0] : null;
   const minimoGeneral = ejemplo ? 44 : unico?.minimo.valor ?? null;
   const conoceCPA = Boolean(unico && unico.datos.cpa !== null);
+  const peores = (campo: "ciudad" | "transportadora" | "producto") => porGrupo(ordenesMes, campo).slice(0, 4);
 
   const entrega = m.tasas.entrega;
   const nivel = entrega === null ? null : nivelEntrega(entrega, minimoGeneral, conoceCPA);
@@ -146,6 +198,18 @@ export default async function Panel({
 
       {vista === "entregas" && (
         <>
+          {conDropi && tiendasDropi.length > 1 && (
+            <div className="filtros">
+              {["todas", ...tiendasDropi].map((t) => (
+                <Link key={t} href={enlace({ tienda: t, cambiar: null })} className={`filtro${t === tiendaSel ? " filtro-activo" : ""}`}>
+                  {t === "todas" ? "Todas las tiendas" : t}
+                </Link>
+              ))}
+            </div>
+          )}
+          {!ejemplo && latidoDropi && (
+            <p className="pedido-meta">Datos de Dropi · actualizados {haceCuanto(latidoDropi.ultima_vez)}</p>
+          )}
           <section className={`pedido tasa-principal${nivel?.leyenda ? " leyenda" : ""}`}>
             <CirculoTasa tasa={entrega} minimo={minimoGeneral} leyenda={nivel?.leyenda} tamano={150} />
             <div>
@@ -186,7 +250,13 @@ export default async function Panel({
               ) : minimoGeneral !== null ? (
                 <>
                   ▏ Tu tasa mínima para no perder dinero: <b>{minimoGeneral} %</b>
-                  {ejemplo ? " (ejemplo)" : unico?.minimo.propia ? " (la escribiste tú)" : " (según tus costos)"}
+                  {ejemplo
+                    ? " (ejemplo)"
+                    : unico?.minimo.propia
+                      ? " (la escribiste tú)"
+                      : unico?.deDropi && (unico.n?.costo == null || unico.n?.flete == null)
+                        ? " (según tus costos reales en Dropi)"
+                        : " (según tus costos)"}
                   {!ejemplo && unico && (
                     <> · <Link href={enlace({ cambiar: "1" })} className="enlace">Cambiar</Link></>
                   )}
@@ -199,7 +269,8 @@ export default async function Panel({
             <Cifra valor={m.despachados} nombre="Despachados" />
             <Cifra valor={m.entregados} nombre="Entregados" />
             <Cifra valor={m.devueltos} nombre="Devueltos (no entregados)" />
-            <Cifra valor={m.conNovedad} nombre="Con novedad" />
+            <Cifra valor={m.conNovedad} nombre="Con novedad abierta" />
+            {conDropi && <Cifra valor={enCamino} nombre="En camino" />}
           </section>
 
           <section className="pedido">
@@ -209,6 +280,29 @@ export default async function Panel({
               <TasaPequena nombre="Tasa real de venta" valor={m.tasas.realVenta} explica="De cada 100 pedidos, cuántos se vuelven plata." />
             </div>
           </section>
+
+          {conDropi && (
+            <section className="pedido">
+              <div className="pedido-nombre">¿Dónde se pierden?</div>
+              <p className="pedido-meta">Tasa de entrega de los últimos 45 días, de peor a mejor (con 3 pedidos terminados o más).</p>
+              {(["transportadora", "ciudad", "producto"] as const).map((campo) => {
+                const lista = peores(campo);
+                if (lista.length === 0) return null;
+                return (
+                  <div key={campo} className="grupo">
+                    <b>Por {campo}</b>
+                    {lista.map((g) => (
+                      <div key={g.nombre} className="fila-grupo">
+                        <span>{g.nombre}</span>
+                        <span className="pedido-meta">{g.entregados}/{g.terminados}</span>
+                        <b style={{ color: colorTasa(g.tasa, minimoGeneral) }}>{g.tasa}%</b>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </section>
+          )}
         </>
       )}
 
@@ -259,11 +353,17 @@ export default async function Panel({
               <input type="hidden" name="producto" value={String(f.shopify_product_id)} />
               <b>{f.producto} · {formatoPesos(f.precio)}</b>
               <div className="numeros">
-                <label>Costo del proveedor<input name="costo" inputMode="numeric" defaultValue={f.datos.costo ?? ""} placeholder="$" /></label>
-                <label>Flete de ida<input name="flete" inputMode="numeric" defaultValue={f.datos.flete ?? ""} placeholder="$" /></label>
+                <label>Costo del proveedor<input name="costo" inputMode="numeric" defaultValue={f.n?.costo ?? ""} placeholder={f.deDropi?.costo ? `Dropi: ${f.deDropi.costo}` : "$"} /></label>
+                <label>Flete de ida<input name="flete" inputMode="numeric" defaultValue={f.n?.flete ?? ""} placeholder={f.deDropi?.flete ? `Dropi: ${f.deDropi.flete}` : "$"} /></label>
                 <label>CPA (publicidad)<input name="cpa" inputMode="numeric" defaultValue={f.datos.cpa ?? ""} placeholder="$ (si lo sabes)" /></label>
                 <label>Tu tasa mínima<input name="tasa_minima" inputMode="numeric" defaultValue={f.datos.tasa_minima ?? ""} placeholder="% (opcional)" /></label>
               </div>
+              {f.deDropi && (
+                <div className="pedido-meta">
+                  En Dropi, por pedido: venta {formatoPesos(f.deDropi.venta)} · proveedor {formatoPesos(f.deDropi.costo ?? 0)} · flete{" "}
+                  {formatoPesos(f.deDropi.flete ?? 0)} (promedio de {f.deDropi.pedidos} pedidos). Si dejas las casillas vacías, la app usa estos.
+                </div>
+              )}
               {f.sugerido !== null && (
                 <div className="pedido-meta">
                   Según tus costos, tu mínimo es {f.sugerido} %.{f.datos.cpa === null ? " (Sin CPA: agrégalo para que sea exacto.)" : ""}
