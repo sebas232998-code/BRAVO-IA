@@ -14,14 +14,16 @@ import { problemaTelefono } from "@/lib/telefono";
 import type { MensajeGuardado } from "@/lib/db";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { fechaCorta, fechaHora, formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
-import { ESTADOS, NOMBRE_ESTADO, type Pedido } from "@/lib/tipos";
+import { NOMBRE_ESTADO, PESTANAS, type Estado, type Pedido, type Pestana } from "@/lib/tipos";
 import type { VinculoDropi } from "@/lib/dropi";
 import {
   editarDatos,
   eliminarPedido,
   enviarConfirmacionWhatsApp,
   marcarConfirmado,
+  archivarPedido,
   atencionResuelta,
+  desarchivarPedido,
   quitarPausaDropi,
   subirADropi,
   vincularProducto,
@@ -33,7 +35,7 @@ export const dynamic = "force-dynamic";
 export default async function Inicio({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; error?: string; ver?: string }>;
+  searchParams: Promise<{ ok?: string; error?: string; ver?: string; pestana?: string }>;
 }) {
   const q = await searchParams;
   const conectada = baseConfigurada();
@@ -46,7 +48,9 @@ export default async function Inicio({
   const problemas = (p: Pedido) => problemasDe(p, vinculos[p.tienda_dominio] ?? []);
   const conProblemas = todos.filter((p) => problemas(p).length > 0);
   const verErrores = q.ver === "errores";
-  const pedidos = verErrores ? conProblemas : todos;
+  const pestana: Pestana = q.pestana && q.pestana in PESTANAS ? (q.pestana as Pestana) : "pendientes";
+  const enPestana = (p: Pedido, t: Pestana) => (PESTANAS[t].estados as readonly Estado[]).includes(p.estado);
+  const pedidos = verErrores ? conProblemas : todos.filter((p) => enPestana(p, pestana));
   const configs = conectada ? await configsWhatsApp() : [];
   const conWhatsApp = new Set(configs.map((c) => c.tienda_dominio));
   const tokensPorVencer = configs.filter(
@@ -57,11 +61,12 @@ export default async function Inicio({
     : {};
   const subeSola = new Set(conectada ? (await tiendasConInterruptores()).filter((t) => t.auto_dropi).map((t) => t.dominio) : []);
   const ahora = new Date();
+  // ¿Ya se le mandó la confirmación? (para no reenviarla por error)
+  const yaSeEnvio = (p: Pedido) =>
+    Boolean(p.confirmacion_enviada_en) || (chats[p.id!] ?? []).some((m) => m.direccion === "saliente");
   const nombreTienda = (d: string) => nombres[d] ?? d.replace(".myshopify.com", "").toUpperCase();
 
-  const conteo = ESTADOS.map((e) => [e, todos.filter((p) => p.estado === e).length] as const).filter(
-    ([, n]) => n > 0,
-  );
+  const conteo = (Object.keys(PESTANAS) as Pestana[]).map((t) => [t, todos.filter((p) => enPestana(p, t)).length] as const);
 
   return (
     <main>
@@ -107,15 +112,21 @@ export default async function Inicio({
         </div>
       )}
 
-      <div className="filtros">
-        {conteo.map(([estado, n]) => (
-          <span key={estado} className="filtro">
-            {NOMBRE_ESTADO[estado]} <b>{n}</b>
-          </span>
-        ))}
-      </div>
+      {!verErrores && (
+        <div className="filtros">
+          {conteo.map(([t, n]) => (
+            <Link key={t} href={t === "pendientes" ? "/" : `/?pestana=${t}`} className={`filtro${t === pestana ? " filtro-activo" : ""}`}>
+              {PESTANAS[t].nombre} <b>{n}</b>
+            </Link>
+          ))}
+        </div>
+      )}
 
-      {pedidos.length === 0 && <p className="subtitulo">Todavía no han entrado pedidos.</p>}
+      {pedidos.length === 0 && (
+        <p className="subtitulo">
+          {todos.length === 0 ? "Todavía no han entrado pedidos." : "No hay pedidos en esta pestaña."}
+        </p>
+      )}
 
       {pedidos.map((p) => {
         const vinc = vinculos[p.tienda_dominio] ?? [];
@@ -211,14 +222,10 @@ export default async function Inicio({
 
             {conectada && (
               <div className="botones">
-                {p.estado === "por_confirmar" && conWhatsApp.has(p.tienda_dominio) && p.telefono && (
+                {p.estado === "por_confirmar" && conWhatsApp.has(p.tienda_dominio) && p.telefono && !yaSeEnvio(p) && (
                   <form action={enviarConfirmacionWhatsApp}>
                     <input type="hidden" name="id" value={p.id} />
-                    <button type="submit" className="principal">
-                      {(chats[p.id!] ?? []).some((m) => m.direccion === "saliente")
-                        ? "Reenviar confirmación 📦"
-                        : "Enviar confirmación por WhatsApp 📦"}
-                    </button>
+                    <button type="submit" className="principal">Enviar confirmación por WhatsApp 📦</button>
                   </form>
                 )}
                 {p.estado === "por_confirmar" && (
@@ -279,6 +286,32 @@ export default async function Inicio({
                   <button type="submit">Guardar cambios</button>
                 </form>
               </details>
+            )}
+
+            {conectada && p.estado === "por_confirmar" && conWhatsApp.has(p.tienda_dominio) && p.telefono && yaSeEnvio(p) && (
+              <details>
+                <summary>La confirmación ya se envió · ¿Reenviar?</summary>
+                <form action={enviarConfirmacionWhatsApp}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <button type="submit">Sí, reenviar la confirmación 📦</button>
+                </form>
+              </details>
+            )}
+
+            {conectada && !enDropi && p.estado !== "archivado" && (
+              <form action={archivarPedido} className="enlinea">
+                <input type="hidden" name="id" value={p.id} />
+                <button type="submit">Ya lo atendí por mi cuenta 📁</button>
+              </form>
+            )}
+            {conectada && p.estado === "archivado" && (
+              <>
+                <div className="pedido-meta">📁 Lo atendiste por tu cuenta: la app no le escribe a esta clienta.</div>
+                <form action={desarchivarPedido} className="enlinea">
+                  <input type="hidden" name="id" value={p.id} />
+                  <button type="submit">Devolver a pendientes</button>
+                </form>
+              </>
             )}
 
             {conectada && !enDropi && (

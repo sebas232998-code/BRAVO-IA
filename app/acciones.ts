@@ -121,3 +121,22 @@ export async function atencionResuelta(f: FormData) {
   await registrarEvento(id, "atencion_resuelta");
   revalidatePath("/");
 }
+
+// El vendedor ya atendió este pedido por su cuenta: sale de la lista y la app no le vuelve a escribir.
+export async function archivarPedido(f: FormData) {
+  const id = texto(f, "id");
+  const p = await obtenerPedido(id);
+  if (!p || p.dropi_order_id || p.estado === "archivado") return;
+  await actualizarPedido(id, { estado: "archivado", aviso_confirmado_en: null });
+  await registrarEvento(id, "archivado", { estado_anterior: p.estado });
+  revalidatePath("/");
+}
+
+export async function desarchivarPedido(f: FormData) {
+  const id = texto(f, "id");
+  const p = await obtenerPedido(id);
+  if (!p || p.estado !== "archivado") return;
+  await actualizarPedido(id, { estado: "por_confirmar" });
+  await registrarEvento(id, "desarchivado");
+  revalidatePath("/");
+}

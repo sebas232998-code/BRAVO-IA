@@ -9,6 +9,7 @@ export const ESTADOS = [
   "entregado",
   "devuelto",
   "cancelado",
+  "archivado",
 ] as const;
 
 export type Estado = (typeof ESTADOS)[number];
@@ -23,7 +24,16 @@ export const NOMBRE_ESTADO: Record<Estado, string> = {
   entregado: "Entregado",
   devuelto: "Devuelto",
   cancelado: "Cancelado",
+  archivado: "Atendido por fuera",
 };
+
+// Pestañas del panel de pedidos.
+export const PESTANAS = {
+  pendientes: { nombre: "Por atender", estados: ["por_confirmar", "confirmado", "error", "novedad"] },
+  cerrados: { nombre: "Enviados y cerrados", estados: ["enviado_dropi", "entregado", "devuelto", "cancelado", "sin_respuesta"] },
+  archivados: { nombre: "Archivados", estados: ["archivado"] },
+} as const satisfies Record<string, { nombre: string; estados: readonly Estado[] }>;
+export type Pestana = keyof typeof PESTANAS;
 
 export interface ItemPedido {
   shopify_product_id: number | null;

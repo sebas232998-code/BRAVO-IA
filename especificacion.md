@@ -305,3 +305,10 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 
 - Pantalla `/probar-ia` (enlace "Probar la IA" en Piloto automático): el vendedor escoge un pedido, escribe como si fuera la clienta y ve qué respondería la app (sin IA, Haiku o Sonnet) y cómo quedaría el pedido. Corre la IA de verdad sobre una copia: no envía WhatsApp ni cambia el pedido. Sirve para ajustar cómo habla la IA antes de usarla con clientas (necesita la clave de Anthropic).
 - Pendiente de probar: la subida a Dropi nunca se ha usado con un pedido real.
+
+## Avance: pedidos atendidos por fuera y pestañas (16 nov 2026)
+
+- El panel de pedidos tiene tres pestañas: "Por atender" (por confirmar, confirmado, con error, novedad), "Enviados y cerrados" (en Dropi, entregado, devuelto, cancelado, sin respuesta) y "Archivados".
+- Botón "Ya lo atendí por mi cuenta 📁": el vendedor lo toca cuando ya habló con la clienta por fuera. El pedido pasa a "Archivados" y la app no le escribe nunca (ni confirmación, ni seguimiento, ni IA). "Devolver a pendientes" lo regresa.
+- Si la confirmación ya se envió, el botón de reenviar queda escondido detrás de "¿Reenviar?" para no tocarlo por error.
+- Los 9 pedidos que había antes del 16 nov los atendió Sebastián por fuera: la app no los toca; él decide si los archiva.

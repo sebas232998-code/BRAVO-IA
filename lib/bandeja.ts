@@ -3,7 +3,7 @@ import type { VinculoDropi } from "./dropi";
 import { problemaTelefono } from "./telefono";
 import type { Pedido } from "./tipos";
 
-const CERRADOS = new Set(["enviado_dropi", "entregado", "devuelto", "cancelado", "sin_respuesta"]);
+const CERRADOS = new Set(["enviado_dropi", "entregado", "devuelto", "cancelado", "sin_respuesta", "archivado"]);
 
 export function problemasDe(p: Pedido, vinculos: VinculoDropi[]): string[] {
   if (CERRADOS.has(p.estado) || p.dropi_order_id) return [];
