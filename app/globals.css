@@ -162,3 +162,4 @@ textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo)
 .fechas input { width: auto; color-scheme: dark; }
 .novedad-escrita { opacity: 0.6; }
 .boton-wa { display: inline-block; padding: 10px 18px; }
+.estado-dropi { font-size: 14px; margin-top: 8px; font-weight: 600; }

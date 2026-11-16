@@ -10,7 +10,7 @@ import {
   vinculosDe,
 } from "@/lib/db";
 import { minutosParaSubir } from "@/lib/automatico";
-import { etapa, tieneNovedad } from "@/lib/dropi-estados";
+import { estadoBonito, etapa, tieneNovedad } from "@/lib/dropi-estados";
 import { problemasDe } from "@/lib/bandeja";
 import { problemaTelefono } from "@/lib/telefono";
 import type { MensajeGuardado } from "@/lib/db";
@@ -63,12 +63,13 @@ export default async function Inicio({
     : {};
   const subeSola = new Set(conectada ? (await tiendasConInterruptores()).filter((t) => t.auto_dropi).map((t) => t.dominio) : []);
   const ahora = new Date();
-  // Cuántas novedades abiertas hay (de lo que se sincronizó de Dropi, sin datos personales).
-  const novedadesAbiertasN = conectada
-    ? (await ordenesDropiDesde(new Date(Date.now() - 30 * 86_400_000))).filter(
-        (o) => !o.es_prueba && etapa(o.estado) === "en_camino" && tieneNovedad(o),
-      ).length
-    : 0;
+  // Estados de Dropi (sincronizados, sin datos personales): novedades abiertas y cómo va cada pedido.
+  const ordenesDropi = conectada ? await ordenesDropiDesde(new Date(Date.now() - 120 * 86_400_000)) : [];
+  const novedadesAbiertasN = ordenesDropi.filter(
+    (o) => !o.es_prueba && new Date(o.creado_en).getTime() > Date.now() - 30 * 86_400_000 && etapa(o.estado) === "en_camino" && tieneNovedad(o),
+  ).length;
+  const dropiPorShopify = new Map(ordenesDropi.filter((o) => o.shop_order_id).map((o) => [String(o.shop_order_id), o]));
+  const dropiPorId = new Map(ordenesDropi.map((o) => [String(o.id), o]));
   // ¿Ya se le mandó la confirmación? (para no reenviarla por error)
   const yaSeEnvio = (p: Pedido) =>
     Boolean(p.confirmacion_enviada_en) || (chats[p.id!] ?? []).some((m) => m.direccion === "saliente");
@@ -216,6 +217,22 @@ export default async function Inicio({
               </div>
             )}
             {enDropi && <div className="listo">✓ En Dropi con el pedido N.º {p.dropi_order_id}</div>}
+            {(() => {
+              // Cómo va en Dropi (también si lo subió la app de Dropi en Shopify).
+              const o = (p.dropi_order_id && dropiPorId.get(String(p.dropi_order_id))) || dropiPorShopify.get(String(p.shopify_order_id));
+              if (!o) return null;
+              const e = etapa(o.estado);
+              const color = e === "entregado" ? "var(--ok)" : e === "devuelto" ? "var(--error)" : "var(--acento)";
+              return (
+                <div className="estado-dropi" style={{ color }}>
+                  📦 Dropi: {estadoBonito(o.estado)}
+                  {o.transportadora ? ` · ${o.transportadora}` : ""}
+                  {tieneNovedad(o) && e === "en_camino" ? (
+                    <> · <Link href="/novedades" className="enlace">⚠️ Novedad</Link></>
+                  ) : null}
+                </div>
+              );
+            })()}
 
             {conectada && !enDropi && sinVincular.map((i) => (
               <form key={i.shopify_variant_id} action={vincularProducto} className="vincular">

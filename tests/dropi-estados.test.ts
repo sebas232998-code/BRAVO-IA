@@ -65,3 +65,12 @@ describe("pedidos de prueba", () => {
     expect(esPrueba({ name: "Ernestina", surname: "Contreras" })).toBe(false); // "TEST" dentro de otra palabra no cuenta
   });
 });
+
+import { estadoBonito } from "../lib/dropi-estados";
+describe("estado bonito", () => {
+  it("se lee fácil", () => {
+    expect(estadoBonito("GUIA_GENERADA")).toBe("Guía generada");
+    expect(estadoBonito("EN TRANSITO")).toBe("En tránsito");
+    expect(estadoBonito("DEVOLUCION")).toBe("Devolución");
+  });
+});

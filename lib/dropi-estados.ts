@@ -192,3 +192,9 @@ export function promediosDropi(ordenes: OrdenDropiLeida[]): { venta: number; cos
     pedidos: t.length,
   };
 }
+
+// "EN REPARTO" → "En reparto", "GUIA_GENERADA" → "Guía generada"
+export function estadoBonito(estado: string): string {
+  const t = estado.replace(/_/g, " ").toLowerCase().replace(/guia/g, "guía").replace(/devolucion/g, "devolución").replace(/transito/g, "tránsito").replace(/confirmacion/g, "confirmación");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
