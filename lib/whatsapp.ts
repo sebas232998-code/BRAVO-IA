@@ -90,6 +90,47 @@ export function mensajePlantillaConfirmacion(p: Pedido, c: Pick<ConfigWhatsApp, 
   };
 }
 
+// Plantilla de seguimiento con sus valores ({{1}}, {{2}}…). Llevan los mismos botones que la confirmación.
+export function mensajePlantilla(para: string, nombre: string, idioma: string, valores: string[]) {
+  return {
+    messaging_product: "whatsapp",
+    to: para,
+    type: "template",
+    template: {
+      name: nombre,
+      language: { code: idioma || IDIOMA_PLANTILLA },
+      components: [{ type: "body", parameters: valores.map((v) => ({ type: "text", text: valorEspacio(v) })) }],
+    },
+  };
+}
+
+export function plantillaSeguimientoParaMeta(nombre: string, p: { categoria: string; texto: string; ejemplo: readonly string[] }) {
+  return {
+    name: nombre,
+    language: IDIOMA_PLANTILLA,
+    category: p.categoria,
+    components: [
+      { type: "BODY", text: p.texto, example: { body_text: [[...p.ejemplo]] } },
+      {
+        type: "BUTTONS",
+        buttons: [
+          { type: "QUICK_REPLY", text: BOTON_CONFIRMAR },
+          { type: "QUICK_REPLY", text: BOTON_CORREGIR },
+        ],
+      },
+    ],
+  };
+}
+
+export function crearPlantillaSeguimientoEnMeta(
+  c: Pick<ConfigWhatsApp, "waba_id" | "access_token">,
+  nombre: string,
+  p: { categoria: string; texto: string; ejemplo: readonly string[] },
+) {
+  if (!c.waba_id) return Promise.resolve({ ok: false, mensaje: "Falta el ID de la cuenta de WhatsApp Business." } as const);
+  return llamarMeta(`${c.waba_id}/message_templates`, c.access_token, plantillaSeguimientoParaMeta(nombre, p));
+}
+
 export function mensajeTexto(para: string, texto: string) {
   return { messaging_product: "whatsapp", to: para, type: "text", text: { body: texto, preview_url: false } };
 }

@@ -4,16 +4,19 @@ import {
   baseConfigurada,
   confirmadosSinSubir,
   configWhatsAppDe,
+  pedidosEnSeguimiento,
   pedidosSinConfirmacion,
   registrarLatido,
   tiendasConInterruptores,
 } from "@/lib/db";
 import { tocaEnviarConfirmacion, tocaSubirADropi } from "@/lib/automatico";
-import { enviarConfirmacion, subirPedido } from "@/lib/flujo";
+import { enviarConfirmacion, enviarSeguimiento, marcarSinRespuesta, subirPedido } from "@/lib/flujo";
+import { siguientePaso } from "@/lib/seguimiento";
 
 // Reloj de tareas del piloto automático. Supabase (pg_cron) llama aquí cada minuto.
 // 1. Envía la confirmación por WhatsApp a los pedidos nuevos.
 // 2. Sube a Dropi los pedidos confirmados hace 5 minutos o más.
+// 3. Seguimiento a quien no responde (3 mensajes; el tercero con descuento) y cierre como "sin respuesta".
 // Se protege con la clave CRON_SECRET (variable de entorno en Vercel).
 
 export const dynamic = "force-dynamic";
@@ -31,7 +34,7 @@ function autorizado(req: Request): boolean {
 
 async function vuelta() {
   const ahora = new Date();
-  const resumen = { confirmaciones: 0, errores_whatsapp: 0, subidos_dropi: 0, errores_dropi: 0 };
+  const resumen = { confirmaciones: 0, errores_whatsapp: 0, subidos_dropi: 0, errores_dropi: 0, seguimientos: 0, sin_respuesta: 0 };
 
   for (const t of await tiendasConInterruptores()) {
     if (t.auto_confirmacion) {
@@ -41,6 +44,24 @@ async function vuelta() {
           if (!tocaEnviarConfirmacion(p, t.auto_desde, ahora)) continue;
           const r = await enviarConfirmacion(p, c, true);
           if (r.ok) resumen.confirmaciones++;
+          else resumen.errores_whatsapp++;
+        }
+      }
+    }
+
+    if (t.auto_seguimiento) {
+      const c = await configWhatsAppDe(t.dominio);
+      if (c) {
+        for (const p of await pedidosEnSeguimiento(t.dominio)) {
+          const paso = siguientePaso(p, t, ahora);
+          if (!paso) continue;
+          if (paso.tipo === "sin_respuesta") {
+            await marcarSinRespuesta(p);
+            resumen.sin_respuesta++;
+            continue;
+          }
+          const r = await enviarSeguimiento(p, c, paso.numero, t, ahora);
+          if (r.ok) resumen.seguimientos++;
           else resumen.errores_whatsapp++;
         }
       }

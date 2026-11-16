@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { configWhatsAppDe, guardarConfigWhatsApp } from "@/lib/db";
 import { normalizarTelefono } from "@/lib/telefono";
 import { fechaCorta } from "@/lib/mensajes";
-import { alargarToken, suscribirCuentaAApp, crearPlantillaEnMeta, enviarMensaje, IDIOMA_PLANTILLA, mensajeHolaMundo, NOMBRE_PLANTILLA } from "@/lib/whatsapp";
+import { PLANTILLAS_SEGUIMIENTO } from "@/lib/seguimiento";
+import { alargarToken, crearPlantillaSeguimientoEnMeta, suscribirCuentaAApp, crearPlantillaEnMeta, enviarMensaje, IDIOMA_PLANTILLA, mensajeHolaMundo, NOMBRE_PLANTILLA } from "@/lib/whatsapp";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").replace(/\s+/g, "").trim();
 
@@ -80,4 +81,18 @@ export async function crearPlantilla(f: FormData) {
   const r = await crearPlantillaEnMeta(c);
   if (!r.ok) volver(tienda, "error", r.mensaje);
   volver(tienda, "ok", "Plantilla enviada a Meta para revisión. Normalmente la aprueban en unos minutos.");
+}
+
+// Crea en Meta las 3 plantillas del seguimiento. Si alguna ya existe, no pasa nada.
+export async function crearPlantillasSeguimiento(f: FormData) {
+  const tienda = String(f.get("tienda") ?? "").trim();
+  const c = await configWhatsAppDe(tienda);
+  if (!c) volver(tienda, "error", "Primero guarda los datos de WhatsApp.");
+  const fallas: string[] = [];
+  for (const [nombre, plantilla] of Object.entries(PLANTILLAS_SEGUIMIENTO)) {
+    const r = await crearPlantillaSeguimientoEnMeta(c, nombre, plantilla);
+    if (!r.ok && !/already exists|ya existe|duplicate/i.test(r.mensaje)) fallas.push(`${nombre}: ${r.mensaje}`);
+  }
+  if (fallas.length) volver(tienda, "error", `No se pudieron crear todas: ${fallas.join(" · ")}`);
+  volver(tienda, "ok", "Plantillas de seguimiento enviadas a Meta para revisión. Normalmente las aprueban en unos minutos.");
 }

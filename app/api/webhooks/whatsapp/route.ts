@@ -8,6 +8,7 @@ import {
   registrarEvento,
 } from "@/lib/db";
 import { MENSAJE_CONFIRMADO } from "@/lib/mensajes";
+import { decidirDescuento, mensajeDescuentoVencido } from "@/lib/seguimiento";
 import { enviarYGuardar } from "@/lib/wa-servidor";
 import {
   esConfirmacion,
@@ -68,12 +69,40 @@ export async function POST(req: Request) {
 
     const id = pedido.id;
     const confirma = esConfirmacion(m.texto);
-
     // Regla fija: solo un "sí" claro confirma. El pedido NO se sube a Dropi aquí:
     // arranca la espera de 5 minutos y el reloj de tareas lo sube después (si el piloto está prendido).
+
+    // Si la clienta escribe, el seguimiento automático se detiene (ya respondió).
+    if (!pedido.ultima_respuesta_en) await actualizarPedido(id, { ultima_respuesta_en: new Date().toISOString() });
+
     if (pedido.estado !== "confirmado" && confirma) {
-      await actualizarPedido(id, { estado: "confirmado", confirmado_en: new Date().toISOString(), dropi_en_pausa: null });
-      await registrarEvento(id, "confirmado_whatsapp", { texto: m.texto });
+      const d = decidirDescuento(pedido, new Date());
+
+      // Se le ofreció descuento y ya venció: se le avisa con amabilidad y se le ofrece el precio normal.
+      if (d.tipo === "avisar_vencido") {
+        await actualizarPedido(id, { descuento_vencido_avisado: true });
+        await registrarEvento(id, "descuento_vencido_avisado", { texto: m.texto });
+        const aviso = mensajeDescuentoVencido(Number(pedido.total));
+        after(async () => {
+          await espera(4000);
+          await enviarYGuardar(c, m.de, mensajeTexto(m.de, aviso), aviso, id);
+        });
+        continue;
+      }
+
+      await actualizarPedido(id, {
+        estado: "confirmado",
+        confirmado_en: new Date().toISOString(),
+        dropi_en_pausa: null,
+        // Confirmó a tiempo con descuento: el valor a recaudar en Dropi queda rebajado.
+        ...(d.tipo === "aplicar"
+          ? { total_original: Number(pedido.total), total: d.nuevoTotal, descuento_aplicado: true }
+          : {}),
+      });
+      await registrarEvento(id, "confirmado_whatsapp", {
+        texto: m.texto,
+        ...(d.tipo === "aplicar" ? { descuento: Number(pedido.descuento_valor), total: d.nuevoTotal } : {}),
+      });
       after(async () => {
         await espera(5000); // que no parezca un robot
         await enviarYGuardar(c, m.de, mensajeTexto(m.de, MENSAJE_CONFIRMADO), MENSAJE_CONFIRMADO, id);

@@ -251,3 +251,13 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Subida automática: 5 minutos después de que la clienta confirma (por WhatsApp o con el botón). Si en ese tiempo la clienta vuelve a escribir algo que no sea un "sí", un "gracias", un sticker o una reacción, la subida se detiene y el pedido muestra el aviso con dos salidas: "Subir a Dropi" o "Todo bien, que siga sola". Si el vendedor corrige los datos de un pedido confirmado, la espera arranca de nuevo.
 - Si Dropi devuelve error no se reintenta solo (si Dropi no respondió, el pedido pudo quedar creado allá): el vendedor corrige y toca "Reintentar".
 - Mientras no haya IA, una corrección escrita en el chat no se aplica sola: la detiene y la revisa el vendedor.
+
+## Avance: seguimiento a quien no responde (16 nov 2026)
+
+- En `/automatico`, por tienda: interruptor "Seguimiento a quien no responde" (viene apagado), horas de los 3 mensajes (2, 24 y 48 por defecto, contadas desde que salió la confirmación) y descuento de rescate (activo, 10 %, 24 horas). Por ahora el descuento se configura por tienda (las tiendas son de un solo producto); por producto queda pendiente.
+- Mensaje 1: recordatorio. Mensaje 2: ofrece corregir datos o un lugar alterno. Mensaje 3: el descuento del ejemplo (precio normal, con descuento, ahorro, vigencia). Sin descuento activo, el 3 es otro recordatorio.
+- Van como plantillas de Meta (`seguimiento_1`, `seguimiento_2`, `seguimiento_descuento`) con los botones "Confirmar pedido" y "Corregir datos"; se crean con un botón en `/whatsapp`. La del descuento es de categoría marketing.
+- Si la clienta escribe cualquier cosa, el seguimiento se detiene. Solo se envía de 7 a. m. a 9 p. m., uno por vez y con espacio entre uno y otro. Solo aplica a pedidos cuya confirmación salió después de prenderlo.
+- Si no responde al tercero, al vencer el descuento (o 24 horas) el pedido queda "Sin respuesta" y no se le vuelve a escribir.
+- Si confirma a tiempo, el total se rebaja y sube así a Dropi; el panel muestra "Confirmó con descuento". Si confirma después de vencido, se le avisa con amabilidad y se le ofrece el precio normal; si vuelve a confirmar, queda al precio normal.
+- Si un mensaje no sale, no se reintenta solo (para no escribirle varias veces) y el pedido muestra el error; si el que falla es el del descuento, el descuento no cuenta.

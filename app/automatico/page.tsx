@@ -35,7 +35,7 @@ export default async function PilotoAutomatico({
   const conWhatsApp = new Set((await configsWhatsApp()).map((c) => c.tienda_dominio));
   const latido = await ultimoLatido("tareas");
   const relojAndando = latido && Date.now() - new Date(latido.ultima_vez).getTime() < 3 * 60_000;
-  const algunoPrendido = tiendas.some((t) => t.auto_confirmacion || t.auto_dropi);
+  const algunoPrendido = tiendas.some((t) => t.auto_confirmacion || t.auto_dropi || t.auto_seguimiento);
 
   return (
     <main>
@@ -85,6 +85,36 @@ export default async function PilotoAutomatico({
                 <span>5 minutos después de que la clienta confirma, por si quiere corregir algo.</span>
               </div>
             </label>
+            <label className="interruptor">
+              <input type="checkbox" name="auto_seguimiento" defaultChecked={t.auto_seguimiento} disabled={!conWhatsApp.has(t.dominio)} />
+              <div>
+                <b>Seguimiento a quien no responde</b>
+                <span>
+                  Hasta 3 mensajes si la clienta no contesta la confirmación. Si responde cualquier cosa, se detiene. Si no
+                  responde al tercero, el pedido queda “Sin respuesta” y no se le vuelve a escribir.
+                </span>
+              </div>
+            </label>
+            <div className="ajustes">
+              <span>Enviar los mensajes a las</span>
+              <input name="horas_1" inputMode="numeric" defaultValue={t.seguimiento_horas?.[0] ?? 2} aria-label="Horas mensaje 1" />
+              <input name="horas_2" inputMode="numeric" defaultValue={t.seguimiento_horas?.[1] ?? 24} aria-label="Horas mensaje 2" />
+              <input name="horas_3" inputMode="numeric" defaultValue={t.seguimiento_horas?.[2] ?? 48} aria-label="Horas mensaje 3" />
+              <span>horas sin respuesta.</span>
+            </div>
+            <label className="interruptor">
+              <input type="checkbox" name="descuento_activo" defaultChecked={t.descuento_activo ?? true} />
+              <div>
+                <b>Descuento de rescate en el tercer mensaje</b>
+                <span>Muestra el precio normal, el precio con descuento y cuánto se ahorra. Si confirma a tiempo, sube a Dropi con el valor rebajado.</span>
+              </div>
+            </label>
+            <div className="ajustes">
+              <input name="descuento_porcentaje" inputMode="numeric" defaultValue={t.descuento_porcentaje ?? 10} aria-label="Porcentaje" />
+              <span>% de descuento, válido por</span>
+              <input name="descuento_horas" inputMode="numeric" defaultValue={t.descuento_horas ?? 24} aria-label="Horas de vigencia" />
+              <span>horas.</span>
+            </div>
             <button type="submit" className="principal">Guardar</button>
           </form>
         </section>
@@ -96,6 +126,8 @@ export default async function PilotoAutomatico({
           <li>El pedido nunca llega a Dropi hasta que la clienta confirme.</li>
           <li>Si después de confirmar la clienta vuelve a escribir (“no, espera, cambien la dirección”), la subida se detiene y te sale un aviso en el pedido. Un “gracias” o un sticker no la detienen.</li>
           <li>Si corriges los datos de un pedido confirmado, los 5 minutos arrancan de nuevo.</li>
+          <li>El seguimiento solo sale de {hora12(HORA_INICIO)} a {hora12(HORA_FIN)}. Necesita las plantillas de seguimiento aprobadas por Meta (se crean en “Configurar WhatsApp”).</li>
+          <li>Si la clienta confirma después de que venció el descuento, se le avisa con amabilidad y se le ofrece el precio normal.</li>
           <li>Si Dropi devuelve un error, el pedido queda “Con error” y no se reintenta solo: lo corriges y tocas “Reintentar”.</li>
         </ul>
       </section>

@@ -11,7 +11,7 @@ import {
 import { minutosParaSubir } from "@/lib/automatico";
 import type { MensajeGuardado } from "@/lib/db";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
-import { fechaCorta, formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
+import { fechaCorta, fechaHora, formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
 import { ESTADOS, NOMBRE_ESTADO, type Pedido } from "@/lib/tipos";
 import type { VinculoDropi } from "@/lib/dropi";
 import {
@@ -115,8 +115,21 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
                 Número no válido: “{p.telefono_original ?? "vacío"}”. Corrígelo en “Editar datos”.
               </div>
             )}
-            {p.error_whatsapp && p.estado === "por_confirmar" && (
-              <div className="problema">No se pudo enviar la confirmación por WhatsApp: {p.error_whatsapp}</div>
+            {p.error_whatsapp && (p.estado === "por_confirmar" || p.estado === "sin_respuesta") && (
+              <div className="problema">No se pudo enviar el WhatsApp: {p.error_whatsapp}</div>
+            )}
+            {p.estado === "por_confirmar" && (p.seguimientos_enviados ?? 0) > 0 && (
+              <div className="espera">
+                📨 Seguimiento {p.seguimientos_enviados} de 3 enviado
+                {p.descuento_valor && p.descuento_vence_en
+                  ? ` · descuento de ${formatoPesos(Number(p.descuento_valor))} ${new Date(p.descuento_vence_en) > ahora ? `hasta el ${fechaHora(p.descuento_vence_en)}` : "(ya venció)"}`
+                  : ""}
+              </div>
+            )}
+            {p.descuento_aplicado && p.total_original && (
+              <div className="listo">
+                🛍 Confirmó con descuento: {formatoPesos(Number(p.total_original))} → {formatoPesos(Number(p.total))}
+              </div>
             )}
             {p.error_dropi && <div className="problema">Dropi: {p.error_dropi}</div>}
             {p.dropi_en_pausa && p.estado === "confirmado" && !enDropi && (

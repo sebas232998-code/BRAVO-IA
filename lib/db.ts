@@ -216,7 +216,7 @@ export async function mensajesDePedidos(ids: string[]): Promise<Record<string, M
 export async function tiendasConInterruptores(): Promise<Tienda[]> {
   const { data, error } = await db()
     .from("tiendas")
-    .select("dominio, nombre, auto_confirmacion, auto_dropi, auto_desde")
+    .select("*")
     .order("nombre");
   if (error) return []; // si aún no se corrió la migración 004
   return (data ?? []) as Tienda[];
@@ -224,7 +224,7 @@ export async function tiendasConInterruptores(): Promise<Tienda[]> {
 
 export async function guardarInterruptores(
   dominio: string,
-  cambios: Partial<Pick<Tienda, "auto_confirmacion" | "auto_dropi" | "auto_desde">>,
+  cambios: Partial<Omit<Tienda, "dominio" | "nombre">>,
 ) {
   const { error } = await db().from("tiendas").update(cambios).eq("dominio", dominio);
   if (error) throw error;
@@ -284,4 +284,34 @@ export async function ultimoLatido(nombre: string): Promise<{ ultima_vez: string
   const { data, error } = await db().from("latidos").select("ultima_vez, detalle").eq("nombre", nombre).maybeSingle();
   if (error) return null;
   return data;
+}
+
+// Pedidos a los que se les mandó la confirmación y la clienta no ha escrito.
+export async function pedidosEnSeguimiento(tienda: string): Promise<Pedido[]> {
+  const { data, error } = await db()
+    .from("pedidos")
+    .select("*")
+    .eq("tienda_dominio", tienda)
+    .eq("estado", "por_confirmar")
+    .not("confirmacion_enviada_en", "is", null)
+    .is("ultima_respuesta_en", null)
+    .lte("seguimientos_enviados", 3)
+    .order("confirmacion_enviada_en", { ascending: true })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as Pedido[];
+}
+
+// Aparta el mensaje N del seguimiento para que dos vueltas del reloj no lo manden dos veces.
+export async function apartarSeguimiento(id: string, numero: number, extra: Record<string, unknown> = {}): Promise<boolean> {
+  const { data, error } = await db()
+    .from("pedidos")
+    .update({ seguimientos_enviados: numero, ultimo_seguimiento_en: new Date().toISOString(), ...extra })
+    .eq("id", id)
+    .eq("seguimientos_enviados", numero - 1)
+    .eq("estado", "por_confirmar")
+    .is("ultima_respuesta_en", null)
+    .select("id");
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
 }

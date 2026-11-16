@@ -119,3 +119,5 @@ a.filtro { text-decoration: none; }
 .espera { color: var(--acento); font-size: 14px; margin-top: 8px; }
 .reglas { color: var(--suave); font-size: 14px; padding-left: 18px; margin: 8px 0 0; }
 .reglas li { margin-bottom: 6px; }
+.ajustes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 0 0 12px 34px; color: var(--suave); font-size: 13px; }
+.ajustes input { width: 64px; padding: 6px 8px; text-align: center; }

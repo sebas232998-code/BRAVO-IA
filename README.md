@@ -21,3 +21,9 @@ App creada por dropshippers, para dropshippers: confirma pedidos por WhatsApp, r
 2. Vercel: agregar la variable `CRON_SECRET` (una clave larga inventada) y volver a desplegar.
 3. Supabase: correr `supabase/reloj_de_tareas.sql` con la misma clave y la dirección de la app.
 4. En la app, entrar a "Piloto automático" y prender los interruptores de cada tienda.
+
+## Seguimiento a quien no responde (Fase 1, paso 5)
+
+1. Supabase: correr `supabase/migrations/005_vencimiento_token.sql` y `006_seguimiento.sql`.
+2. En "Configurar WhatsApp", tocar "Crear plantillas de seguimiento en Meta" y esperar la aprobación.
+3. En "Piloto automático", prender "Seguimiento a quien no responde".

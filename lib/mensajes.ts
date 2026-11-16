@@ -31,3 +31,14 @@ export function fechaCorta(iso: string | null | undefined): string {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Bogota" });
 }
+
+// "17 nov, 3:40 p. m." (hora de Colombia)
+export function fechaHora(iso: string): string {
+  return new Date(iso).toLocaleString("es-CO", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/Bogota",
+  });
+}

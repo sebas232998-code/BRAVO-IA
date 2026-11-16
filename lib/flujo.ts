@@ -1,6 +1,7 @@
 import {
   actualizarPedido,
   apartarConfirmacion,
+  apartarSeguimiento,
   apartarParaSubir,
   obtenerPedido,
   registrarEvento,
@@ -10,7 +11,8 @@ import { armarOrdenDropi, crearOrdenDropi, dropiConfigurado, FaltaDato } from ".
 import { mensajeConfirmacion } from "./mensajes";
 import type { Pedido } from "./tipos";
 import { enviarYGuardar } from "./wa-servidor";
-import { mensajePlantillaConfirmacion, type ConfigWhatsApp } from "./whatsapp";
+import { mensajePlantilla, mensajePlantillaConfirmacion, resumenProductos, type ConfigWhatsApp } from "./whatsapp";
+import { llenarPlantilla, mensajeSeguimiento, PLANTILLAS_SEGUIMIENTO, type ConfigSeguimiento } from "./seguimiento";
 
 // Pasos del recorrido del pedido que se usan igual desde un botón o desde el piloto automático.
 
@@ -79,4 +81,43 @@ export async function subirPedido(id: string, automatico: boolean): Promise<Resu
   });
   await registrarEvento(id, "enviado_dropi", { dropi_order_id: r.id, ...(automatico ? { automatico: true } : {}) });
   return { ok: true };
+}
+
+// Manda el mensaje N del seguimiento (1, 2 o 3). El 3 lleva el descuento de rescate si está activo.
+export async function enviarSeguimiento(
+  p: Pedido,
+  c: ConfigWhatsApp,
+  numero: 1 | 2 | 3,
+  cfg: ConfigSeguimiento,
+  ahora = new Date(),
+): Promise<Resultado> {
+  if (!p.id || !p.telefono) return { ok: false, mensaje: "Sin número." };
+  const m = mensajeSeguimiento(numero, resumenProductos(p), Number(p.total), cfg);
+  const descuento = m.descuento
+    ? {
+        descuento_valor: m.descuento.ahorro,
+        descuento_vence_en: new Date(ahora.getTime() + cfg.descuento_horas * 3_600_000).toISOString(),
+      }
+    : {};
+  if (!(await apartarSeguimiento(p.id, numero, descuento))) return { ok: false, mensaje: "Ya se estaba enviando." };
+
+  const texto = llenarPlantilla(PLANTILLAS_SEGUIMIENTO[m.plantilla].texto, m.valores);
+  const r = await enviarYGuardar(c, p.telefono, mensajePlantilla(p.telefono, m.plantilla, c.idioma_plantilla, m.valores), texto, p.id);
+  if (!r.ok) {
+    // No se reintenta solo (para no escribirle varias veces); queda el error a la vista.
+    // Si el mensaje del descuento no salió, el descuento no cuenta (la clienta nunca lo vio).
+    await actualizarPedido(p.id, {
+      error_whatsapp: `Seguimiento ${numero}: ${r.mensaje}`,
+      ...(m.descuento ? { descuento_valor: null, descuento_vence_en: null } : {}),
+    });
+    return { ok: false, mensaje: r.mensaje };
+  }
+  await registrarEvento(p.id, "seguimiento_enviado", { numero, ...(m.descuento ? { descuento: m.descuento } : {}) });
+  return { ok: true };
+}
+
+export async function marcarSinRespuesta(p: Pedido): Promise<void> {
+  if (!p.id) return;
+  await actualizarPedido(p.id, { estado: "sin_respuesta" });
+  await registrarEvento(p.id, "sin_respuesta", { seguimientos: p.seguimientos_enviados ?? 0 });
 }

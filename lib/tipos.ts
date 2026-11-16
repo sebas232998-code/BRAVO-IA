@@ -59,6 +59,15 @@ export interface Pedido {
   error_whatsapp?: string | null;
   dropi_en_pausa?: string | null; // motivo por el que la subida automática quedó detenida
   recibido_en?: string;
+  // Seguimiento a quien no responde
+  seguimientos_enviados?: number;
+  ultimo_seguimiento_en?: string | null;
+  ultima_respuesta_en?: string | null;
+  descuento_valor?: number | null;
+  descuento_vence_en?: string | null;
+  descuento_aplicado?: boolean;
+  descuento_vencido_avisado?: boolean;
+  total_original?: number | null;
 }
 
 // Interruptores del piloto automático de cada tienda.
@@ -68,4 +77,10 @@ export interface Tienda {
   auto_confirmacion: boolean;
   auto_dropi: boolean;
   auto_desde: string | null;
+  auto_seguimiento: boolean;
+  seguimiento_desde: string | null;
+  seguimiento_horas: number[];
+  descuento_activo: boolean;
+  descuento_porcentaje: number;
+  descuento_horas: number;
 }
