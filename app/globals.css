@@ -127,3 +127,10 @@ a.filtro { text-decoration: none; }
 .nota-ia { justify-self: center; color: var(--suave); font-size: 12px; text-align: center; max-width: 90%; }
 .filtro-activo { background: var(--acento); color: #0b0e11; } .filtro-activo b { color: #0b0e11; }
 textarea { font: inherit; font-size: 15px; width: 100%; background: var(--campo); color: var(--texto); border: 1px solid var(--linea); border-radius: 10px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
+.rescatadas { text-align: center; }
+.numero-grande { font-size: 56px; font-weight: 800; color: var(--acento); line-height: 1.1; margin: 4px 0; }
+.tasa { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; }
+.cifras div { display: grid; gap: 2px; }
+.cifras b { font-size: 22px; }
+.cifras span { color: var(--suave); font-size: 12px; }

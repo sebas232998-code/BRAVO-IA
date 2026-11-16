@@ -74,7 +74,8 @@ export default async function Inicio({
         Bravo <span>IA</span>
       </h1>
       <p className="subtitulo">
-        Pedidos de tus tiendas · <Link href="/automatico" className="enlace">Piloto automático</Link> ·{" "}
+        Pedidos de tus tiendas · <Link href="/panel" className="enlace">Panel</Link> ·{" "}
+        <Link href="/automatico" className="enlace">Piloto automático</Link> ·{" "}
         <Link href="/whatsapp" className="enlace">Configurar WhatsApp</Link>
       </p>
 

@@ -318,3 +318,11 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Pantalla `/cerebro` (enlace en Piloto automático): por tienda, un cuadro de texto con lo que la IA puede responder (producto, medidas, envíos, garantía, cambios, pagos, preguntas frecuentes). La IA responde solo con eso; lo que no esté, lo escala al vendedor.
 - PETION quedó prellenada con lo que se sabía de la tienda y de la ficha de Dropi (colores, medidas, acolchado, lavado, precio, pago contraentrega). Faltan los tiempos de entrega, la garantía y los cambios: los escribe Sebastián.
 - Pendiente: leer el link de la tienda automáticamente (por ahora se escribe a mano; las políticas de PETION en Shopify solo tienen la de privacidad).
+
+## Avance: panel (16 nov 2026, adelantado de la Fase 2)
+
+- Pantalla `/panel` (enlace "Panel" en Pedidos) con filtro hoy / esta semana / este mes (hora de Colombia, la semana desde el lunes).
+- "Ventas rescatadas por Bravo IA" con el número grande en amarillo y la plata de esos pedidos: confirmaron después de un mensaje de seguimiento, con el descuento de rescate o después de que la IA les cambió algo.
+- Tasa de confirmación en un círculo con semáforo (verde desde 85 %, Leyenda desde 90 %, amarillo hacia 70 %, naranja hacia 60 %, rojo abajo), medida sobre los pedidos ya decididos (confirmados ÷ confirmados + sin respuesta/cancelados), con una frase que la explica.
+- Cifras: recibidos, confirmados, por confirmar, sin respuesta o cancelados, subidos a Dropi. Los archivados no cuentan.
+- Pendiente: tasa de entrega, novedad, rescate y real de venta (necesitan leer los estados de Dropi).

@@ -417,3 +417,15 @@ export async function guardarCerebro(dominio: string, cerebro: string) {
   const { error } = await db().from("tiendas").update({ cerebro }).eq("dominio", dominio);
   if (error) throw error;
 }
+
+// Pedidos en los que la IA hizo algo (para contar las ventas rescatadas).
+export async function pedidosConIA(ids: string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const { data, error } = await db()
+    .from("eventos_pedido")
+    .select("pedido_id")
+    .in("tipo", ["ia_cambio"])
+    .in("pedido_id", ids.slice(0, 500));
+  if (error) return new Set();
+  return new Set((data ?? []).map((e) => e.pedido_id as string));
+}
