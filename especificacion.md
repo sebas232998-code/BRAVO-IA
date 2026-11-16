@@ -166,7 +166,7 @@ Corregir datos (pedido de Sebastián, 9 nov 2026):
 
 - La clienta ve dos botones: "Confirmar pedido" y "Corregir datos".
 - "Corregir datos" le abre un formulario dentro del mismo WhatsApp (WhatsApp Flows) con sus datos ya llenos (nombre, celular, ciudad, barrio, dirección); cambia solo lo que quiera y toca "Confirmar pedido" (el botón final del formulario). Eso cuenta como confirmación: la app actualiza el pedido, lo marca confirmado y envía el mensaje de pedido confirmado, sin volver a mandar el resumen (pedido de Sebastián, 9 nov 2026).
-- Si corrige escribiendo en el chat (sin formulario), la IA interpreta el dato y sí le vuelve a mostrar el resumen para que confirme, porque la IA podría entender mal una dirección.
+- Si corrige escribiendo en el chat (sin formulario), la IA interpreta el dato y actualiza el pedido sin pedir otra confirmación (ver "Cambios pedidos por la clienta", decisión de Sebastián del 16 nov 2026).
 - También puede corregir escribiendo normal en el chat ("mejor envíenlo a otra dirección"): la IA responde corto ("Ok, no hay ningún problema. Envía los datos que deseas editar directamente aquí."), toma el dato nuevo y vuelve a mostrar el resumen.
 - Después de confirmar: a los ~5 segundos sale el mensaje de pedido confirmado. Durante los 5 minutos de espera, si la clienta escribe "no, espera, faltó…", la subida a Dropi se detiene, se corrige y la espera arranca de nuevo.
 
@@ -274,3 +274,13 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 ## Avance: días hábiles (16 nov 2026)
 
 - `lib/festivos.ts`: festivos de Colombia de cualquier año (fijos, los que se corren al lunes y los de Semana Santa), "¿es día hábil?" y "fecha después de N días hábiles". Listo para la herramienta `consultar_dias_habiles` de la IA (Fase 2).
+
+## Cambios pedidos por la clienta (decisión de Sebastián, 16 nov 2026)
+
+- Si la clienta pide un cambio ("en realidad es el de 2 puestos", "quiero 2", "cámbienme la dirección"), la IA lo aplica y el pedido queda confirmado: si está pidiendo el cambio es porque quiere el producto, no se le pide confirmar otra vez.
+- Respuesta corta: "Listo, ya actualicé tu pedido ✅" con los datos que cambiaron y el total (si cambia la cantidad cambia lo que va a pagar). No se le pregunta nada.
+- Si ella responde ("ok, gracias") o no dice nada en un par de minutos, sale el mensaje de pedido confirmado ("Tu pedido está siendo procesado y será despachado lo más pronto posible 🚚"). Si pregunta algo, la IA responde primero.
+- La espera de 5 minutos antes de subir a Dropi sigue igual: si dice "no, eso no", la subida se detiene.
+- Variantes y cantidades: solo las que existen en Shopify, con el precio de Shopify; el pedido sube a Dropi con la variación vinculada. Si pide algo que no existe o no está claro, la IA pregunta o escala al vendedor; nunca adivina.
+- Si el pedido ya está en Dropi: depende de lo que permita la API de Dropi (pendiente por verificar); si no deja editar, la IA responde con amabilidad y avisa al vendedor.
+- Necesita: clave de la API de Anthropic, Shopify conectado con lectura de productos (variantes y precios) y el token de WhatsApp para probar con mensajes reales.
