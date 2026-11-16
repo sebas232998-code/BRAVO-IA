@@ -208,7 +208,7 @@ Tono por defecto:
 - Pantalla `/whatsapp`: por tienda se guardan Phone number ID, WABA ID, token y App secret (en Supabase, solo los lee el servidor), mensaje de prueba (hello_world), URL y token de verificación del webhook, y botón para crear la plantilla `confirmacion_pedido` en Meta.
 - En cada pedido "Por confirmar": botón "Enviar confirmación por WhatsApp" (plantilla aprobada) y chat del pedido.
 - Webhook `/api/webhooks/whatsapp`: guarda los mensajes; un "sí" claro marca el pedido como confirmado y a los ~5 s responde el mensaje de pedido confirmado; "Corregir datos" responde con el texto de editar datos. Lo dudoso solo se guarda.
-- Todavía NO: envío automático al entrar el pedido, subida automática a Dropi a los 5 minutos, seguimiento de 3 mensajes, formulario de WhatsApp Flows.
+- Todavía NO: seguimiento de 3 mensajes, formulario de WhatsApp Flows (el envío automático y la subida a los 5 minutos quedaron en el paso siguiente).
 - Vincular productos sin escribir IDs (pendiente): la app de Dropi en Shopify guarda en cada producto y variante un metafield `dropi._dropi_product` / `dropi._dropi_variation` con el ID del producto y de la variación en Dropi. Cuando Bravo IA tenga acceso a la API de Shopify de cada tienda (al conectar la tienda con login), debe leerlos y vincular sola. Por ahora PETION quedó vinculada a mano (cubresofá, producto Dropi 2286474, 4 variaciones).
 
 Tasa de entrega con semáforo (pedido de Sebastián, 9 nov 2026):
@@ -242,3 +242,12 @@ Gamificación (pedido de Sebastián, 9 nov 2026):
 - Contador de leyendas en el perfil ("🏆 Leyendas: 2 este mes · 7 en total"), para que la gente hable de "cuántas leyendas hice".
 - Botón de compartir al lograr una Leyenda: imagen lista para historias de Instagram/TikTok con el toro, el porcentaje y la marca Bravo IA (sin datos de clientas ni montos, salvo que el vendedor quiera). Sirve como publicidad gratis.
 - Idea para la Fase 3 (cuando se cobre mensualidad), sin decidir todavía: premiar a las leyendas; la opción que más le gusta a Sebastián es un 5 % de descuento por 3 leyendas consecutivas (otras: mes gratis, funciones exclusivas). La tasa sale de Dropi, así que no se puede inventar.
+
+## Avance: piloto automático (16 nov 2026)
+
+- Pantalla `/automatico`: por tienda, dos interruptores (vienen apagados): "Enviar la confirmación por WhatsApp sola" y "Subir a Dropi sola".
+- Reloj de tareas: Supabase (pg_cron) llama cada minuto a `/api/tareas`, protegido con la clave `CRON_SECRET`. Se usa Supabase porque el plan gratis de Vercel solo deja tareas una vez al día. La pantalla muestra si el reloj está corriendo.
+- Confirmación automática: un minuto después de que entra el pedido, solo pedidos que entren después de prender el interruptor, en horario de 7:00 a. m. a 9:00 p. m. (hora de Colombia); los de la noche salen a las 7 a. m. Si falla, el pedido muestra el error de WhatsApp.
+- Subida automática: 5 minutos después de que la clienta confirma (por WhatsApp o con el botón). Si en ese tiempo la clienta vuelve a escribir algo que no sea un "sí", un "gracias", un sticker o una reacción, la subida se detiene y el pedido muestra el aviso con dos salidas: "Subir a Dropi" o "Todo bien, que siga sola". Si el vendedor corrige los datos de un pedido confirmado, la espera arranca de nuevo.
+- Si Dropi devuelve error no se reintenta solo (si Dropi no respondió, el pedido pudo quedar creado allá): el vendedor corrige y toca "Reintentar".
+- Mientras no haya IA, una corrección escrita en el chat no se aplica sola: la detiene y la revisa el vendedor.

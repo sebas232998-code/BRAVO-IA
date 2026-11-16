@@ -11,6 +11,7 @@ import { MENSAJE_CONFIRMADO } from "@/lib/mensajes";
 import { enviarYGuardar } from "@/lib/wa-servidor";
 import {
   esConfirmacion,
+  esCortesia,
   esCorregirDatos,
   espera,
   extraerMensajes,
@@ -65,18 +66,35 @@ export async function POST(req: Request) {
     });
     if (!nuevo || !pedido?.id) continue; // repetido, o mensaje sin pedido abierto: solo queda guardado
 
-    // Regla fija: solo un "sí" claro confirma. El pedido NO se sube a Dropi aquí.
-    if (pedido.estado !== "confirmado" && esConfirmacion(m.texto)) {
-      await actualizarPedido(pedido.id, { estado: "confirmado" });
-      await registrarEvento(pedido.id, "confirmado_whatsapp", { texto: m.texto });
-      const id = pedido.id;
+    const id = pedido.id;
+    const confirma = esConfirmacion(m.texto);
+
+    // Regla fija: solo un "sí" claro confirma. El pedido NO se sube a Dropi aquí:
+    // arranca la espera de 5 minutos y el reloj de tareas lo sube después (si el piloto está prendido).
+    if (pedido.estado !== "confirmado" && confirma) {
+      await actualizarPedido(id, { estado: "confirmado", confirmado_en: new Date().toISOString(), dropi_en_pausa: null });
+      await registrarEvento(id, "confirmado_whatsapp", { texto: m.texto });
       after(async () => {
         await espera(5000); // que no parezca un robot
         await enviarYGuardar(c, m.de, mensajeTexto(m.de, MENSAJE_CONFIRMADO), MENSAJE_CONFIRMADO, id);
       });
-    } else if (esCorregirDatos(m.texto)) {
-      await registrarEvento(pedido.id, "pide_corregir_datos");
-      const id = pedido.id;
+      continue;
+    }
+
+    // Ya confirmó y todavía no está en Dropi, pero volvió a escribir ("no, espera, faltó…"):
+    // la subida automática se detiene hasta que el vendedor lo revise.
+    // Un "gracias", un sticker, una reacción o un nuevo "sí" no la detienen.
+    const noPideNada = m.tipo === "reaction" || m.tipo === "sticker" || esCortesia(m.texto);
+    if (pedido.estado === "confirmado" && !confirma && !noPideNada) {
+      const motivo = m.texto
+        ? `La clienta escribió después de confirmar: “${m.texto.slice(0, 200)}”`
+        : "La clienta mandó una foto, audio o archivo después de confirmar.";
+      await actualizarPedido(id, { dropi_en_pausa: motivo });
+      await registrarEvento(id, "pausa_dropi", { texto: m.texto });
+    }
+
+    if (esCorregirDatos(m.texto)) {
+      await registrarEvento(id, "pide_corregir_datos");
       after(async () => {
         await espera(3000);
         await enviarYGuardar(c, m.de, mensajeTexto(m.de, MENSAJE_CORREGIR), MENSAJE_CORREGIR, id);

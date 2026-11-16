@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // Protege la app con una contraseña (variable APP_PASSWORD), porque muestra datos de clientas.
-// El webhook de Shopify queda por fuera: ese se protege con la firma de Shopify.
+// Los webhooks quedan por fuera (se protegen con la firma de Shopify y Meta), igual que el reloj de tareas (clave CRON_SECRET).
 export function proxy(req: NextRequest) {
   const clave = process.env.APP_PASSWORD;
   if (!clave) return NextResponse.next();
@@ -19,5 +19,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/webhooks|privacidad|eliminar-datos|manifest.webmanifest|icon-.*\\.png|_next/static|_next/image).*)"],
+  matcher: ["/((?!api/webhooks|api/tareas|privacidad|eliminar-datos|manifest.webmanifest|icon-.*\\.png|_next/static|_next/image).*)"],
 };

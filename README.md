@@ -14,3 +14,10 @@ App creada por dropshippers, para dropshippers: confirma pedidos por WhatsApp, r
 1. Supabase: pegar `supabase/migrations/001_pedidos.sql` en el SQL Editor y darle Run.
 2. Vercel: importar este repositorio y poner las variables de `.env.example`.
 3. Shopify: crear el webhook "Creación de pedido" apuntando a `https://TU-APP.vercel.app/api/webhooks/shopify`.
+
+## Piloto automático (Fase 1, paso 4)
+
+1. Supabase: correr `supabase/migrations/004_automatico.sql`.
+2. Vercel: agregar la variable `CRON_SECRET` (una clave larga inventada) y volver a desplegar.
+3. Supabase: correr `supabase/reloj_de_tareas.sql` con la misma clave y la dirección de la app.
+4. En la app, entrar a "Piloto automático" y prender los interruptores de cada tienda.

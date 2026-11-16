@@ -249,6 +249,22 @@ export function esCorregirDatos(texto: string): boolean {
   return normalizarRespuesta(texto) === normalizarRespuesta(BOTON_CORREGIR);
 }
 
+// Mensajes que no piden nada ("gracias", "ok gracias", "🙌"): no detienen la subida a Dropi.
+const CORTESIAS = [
+  "gracias", "muchas gracias", "mil gracias", "gracias a ti", "gracias a usted", "bueno gracias", "vale gracias",
+  "listo gracias", "ok gracias", "perfecto gracias", "super", "excelente", "genial", "bueno", "vale", "bendiciones",
+  "dios le pague", "quedo atenta", "quedo atento", "estare pendiente", "a la orden", "con gusto",
+];
+
+export function esCortesia(texto: string): boolean {
+  const t = normalizarRespuesta(texto)
+    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{1F3FB}-\u{1F3FF}]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return texto.trim().length > 0; // solo emojis o stickers
+  return CORTESIAS.includes(t);
+}
+
 export const MENSAJE_CORREGIR = "Ok, no hay ningún problema. Envía los datos que deseas editar directamente aquí.";
 
 export const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));

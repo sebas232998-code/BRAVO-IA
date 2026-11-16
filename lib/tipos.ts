@@ -54,4 +54,18 @@ export interface Pedido {
   items: ItemPedido[];
   dropi_order_id?: string | null;
   error_dropi?: string | null;
+  confirmacion_enviada_en?: string | null;
+  confirmado_en?: string | null; // arranca la espera de 5 minutos antes de subir a Dropi
+  error_whatsapp?: string | null;
+  dropi_en_pausa?: string | null; // motivo por el que la subida automática quedó detenida
+  recibido_en?: string;
+}
+
+// Interruptores del piloto automático de cada tienda.
+export interface Tienda {
+  dominio: string;
+  nombre: string;
+  auto_confirmacion: boolean;
+  auto_dropi: boolean;
+  auto_desde: string | null;
 }

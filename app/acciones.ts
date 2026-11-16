@@ -4,19 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   actualizarPedido,
-  apartarParaSubir,
   borrarPedido,
+  configWhatsAppDe,
   guardarVinculo,
   obtenerPedido,
   registrarEvento,
-  vinculosDe,
 } from "@/lib/db";
-import { armarOrdenDropi, crearOrdenDropi, dropiConfigurado, FaltaDato } from "@/lib/dropi";
+import { enviarConfirmacion, subirPedido } from "@/lib/flujo";
 import { normalizarTelefono } from "@/lib/telefono";
-import { configWhatsAppDe } from "@/lib/db";
-import { enviarYGuardar } from "@/lib/wa-servidor";
-import { mensajePlantillaConfirmacion } from "@/lib/whatsapp";
-import { mensajeConfirmacion } from "@/lib/mensajes";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").replace(/\s+/g, " ").trim();
 
@@ -26,7 +21,7 @@ export async function marcarConfirmado(f: FormData) {
   const id = texto(f, "id");
   const p = await obtenerPedido(id);
   if (!p || p.estado !== "por_confirmar") return;
-  await actualizarPedido(id, { estado: "confirmado" });
+  await actualizarPedido(id, { estado: "confirmado", confirmado_en: new Date().toISOString(), dropi_en_pausa: null });
   await registrarEvento(id, "confirmado_manual");
   revalidatePath("/");
 }
@@ -35,7 +30,7 @@ export async function volverAPorConfirmar(f: FormData) {
   const id = texto(f, "id");
   const p = await obtenerPedido(id);
   if (!p || p.estado !== "confirmado" || p.dropi_order_id) return;
-  await actualizarPedido(id, { estado: "por_confirmar", error_dropi: null });
+  await actualizarPedido(id, { estado: "por_confirmar", error_dropi: null, confirmado_en: null, dropi_en_pausa: null });
   await registrarEvento(id, "confirmacion_deshecha");
   revalidatePath("/");
 }
@@ -53,8 +48,12 @@ export async function editarDatos(f: FormData) {
     ciudad: texto(f, "ciudad") || null,
     direccion: texto(f, "direccion") || null,
     error_dropi: null,
-    // Si tenía error de Dropi, ya estaba confirmado: queda listo para reintentar.
-    ...(p.estado === "error" ? { estado: "confirmado" as const } : {}),
+    error_whatsapp: null,
+    // Si ya confirmó, la espera de 5 minutos arranca de nuevo con los datos corregidos.
+    ...(p.estado === "confirmado" ? { confirmado_en: new Date().toISOString(), dropi_en_pausa: null } : {}),
+    // Si tenía error de Dropi, ya estaba confirmado: queda listo para reintentar con el botón.
+    // (No se reintenta solo: si Dropi no respondió, el pedido pudo quedar creado allá.)
+    ...(p.estado === "error" ? { estado: "confirmado" as const, confirmado_en: null, dropi_en_pausa: null } : {}),
   };
   await actualizarPedido(id, cambios);
   await registrarEvento(id, "datos_editados", { antes: { telefono: p.telefono_original, ciudad: p.ciudad, direccion: p.direccion } });
@@ -72,37 +71,17 @@ export async function vincularProducto(f: FormData) {
 }
 
 export async function subirADropi(f: FormData) {
+  await subirPedido(texto(f, "id"), false);
+  revalidatePath("/");
+}
+
+// El vendedor revisó lo que escribió la clienta y quiere que el piloto automático siga.
+export async function quitarPausaDropi(f: FormData) {
   const id = texto(f, "id");
   const p = await obtenerPedido(id);
-  if (!p) return;
-
-  // Regla fija: el pedido no llega a Dropi hasta que la clienta confirme.
-  if (p.estado !== "confirmado" && !(p.estado === "error" && p.error_dropi)) return;
-  if (p.dropi_order_id) return;
-
-  const fallo = async (mensaje: string) => {
-    await actualizarPedido(id, { estado: "error", error_dropi: mensaje, subiendo_desde: null });
-    await registrarEvento(id, "error_dropi", { mensaje });
-    revalidatePath("/");
-  };
-
-  if (!dropiConfigurado()) return fallo("Falta poner el token de Dropi (DROPI_INTEGRATION_KEY) en Vercel.");
-
-  let orden;
-  try {
-    orden = armarOrdenDropi(p, await vinculosDe(p.tienda_dominio));
-  } catch (e) {
-    if (e instanceof FaltaDato) return fallo(e.message);
-    throw e;
-  }
-
-  if (!(await apartarParaSubir(id))) return; // ya se está subiendo o ya subió
-
-  const r = await crearOrdenDropi(orden);
-  if (!r.ok) return fallo(r.mensaje);
-
-  await actualizarPedido(id, { estado: "enviado_dropi", dropi_order_id: r.id, error_dropi: null, subiendo_desde: null });
-  await registrarEvento(id, "enviado_dropi", { dropi_order_id: r.id });
+  if (!p || p.estado !== "confirmado" || p.dropi_order_id) return;
+  await actualizarPedido(id, { dropi_en_pausa: null });
+  await registrarEvento(id, "pausa_dropi_quitada");
   revalidatePath("/");
 }
 
@@ -119,14 +98,9 @@ export async function enviarConfirmacionWhatsApp(f: FormData) {
   const id = texto(f, "id");
   const p = await obtenerPedido(id);
   if (!p || p.estado !== "por_confirmar") return;
-  if (!p.telefono) {
-    await registrarEvento(id, "error_whatsapp", { mensaje: "Número no válido" });
-    return revalidatePath("/");
-  }
   const c = await configWhatsAppDe(p.tienda_dominio);
   if (!c) return;
-  const r = await enviarYGuardar(c, p.telefono, mensajePlantillaConfirmacion(p, c), mensajeConfirmacion(p), id);
-  if (r.ok) await registrarEvento(id, "confirmacion_enviada");
+  const r = await enviarConfirmacion(p, c, false);
   revalidatePath("/");
   redirect(r.ok ? `/?ok=${encodeURIComponent(`Confirmación enviada a ${p.nombre_clienta}.`)}` : `/?error=${encodeURIComponent(`WhatsApp: ${r.mensaje}`)}`);
 }

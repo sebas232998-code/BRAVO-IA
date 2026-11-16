@@ -110,3 +110,12 @@ a.filtro { text-decoration: none; }
 .legal h2 { font-size: 18px; margin: 24px 0 8px; }
 .legal p, .legal li { color: #d6d6d6; }
 .legal a { color: var(--acento); }
+
+.interruptor { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--linea); cursor: pointer; }
+.interruptor:first-of-type { border-top: 0; }
+.interruptor input { width: 22px; height: 22px; flex: none; margin: 2px 0 0; accent-color: var(--acento); }
+.interruptor b { display: block; font-size: 15px; }
+.interruptor span { color: var(--suave); font-size: 13px; }
+.espera { color: var(--acento); font-size: 14px; margin-top: 8px; }
+.reglas { color: var(--suave); font-size: 14px; padding-left: 18px; margin: 8px 0 0; }
+.reglas li { margin-bottom: 6px; }

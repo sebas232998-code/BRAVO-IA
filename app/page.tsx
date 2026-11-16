@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { baseConfigurada, configsWhatsApp, listarPedidos, mensajesDePedidos, nombresTiendas, vinculosDe } from "@/lib/db";
+import {
+  baseConfigurada,
+  configsWhatsApp,
+  listarPedidos,
+  mensajesDePedidos,
+  nombresTiendas,
+  tiendasConInterruptores,
+  vinculosDe,
+} from "@/lib/db";
+import { minutosParaSubir } from "@/lib/automatico";
 import type { MensajeGuardado } from "@/lib/db";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { formatoPesos, mensajeConfirmacion } from "@/lib/mensajes";
@@ -10,6 +19,7 @@ import {
   eliminarPedido,
   enviarConfirmacionWhatsApp,
   marcarConfirmado,
+  quitarPausaDropi,
   subirADropi,
   vincularProducto,
   volverAPorConfirmar,
@@ -30,6 +40,8 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
   const chats: Record<string, MensajeGuardado[]> = conectada
     ? await mensajesDePedidos(pedidos.map((p) => p.id!).filter(Boolean))
     : {};
+  const subeSola = new Set(conectada ? (await tiendasConInterruptores()).filter((t) => t.auto_dropi).map((t) => t.dominio) : []);
+  const ahora = new Date();
   const nombreTienda = (d: string) => nombres[d] ?? d.replace(".myshopify.com", "").toUpperCase();
 
   const conteo = ESTADOS.map((e) => [e, pedidos.filter((p) => p.estado === e).length] as const).filter(
@@ -42,7 +54,8 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
         Bravo <span>IA</span>
       </h1>
       <p className="subtitulo">
-        Pedidos de tus tiendas · <Link href="/whatsapp" className="enlace">Configurar WhatsApp</Link>
+        Pedidos de tus tiendas · <Link href="/automatico" className="enlace">Piloto automático</Link> ·{" "}
+        <Link href="/whatsapp" className="enlace">Configurar WhatsApp</Link>
       </p>
 
       {q.ok && <div className="listo caja">{q.ok}</div>}
@@ -90,7 +103,23 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
                 Número no válido: “{p.telefono_original ?? "vacío"}”. Corrígelo en “Editar datos”.
               </div>
             )}
+            {p.error_whatsapp && p.estado === "por_confirmar" && (
+              <div className="problema">No se pudo enviar la confirmación por WhatsApp: {p.error_whatsapp}</div>
+            )}
             {p.error_dropi && <div className="problema">Dropi: {p.error_dropi}</div>}
+            {p.dropi_en_pausa && p.estado === "confirmado" && !enDropi && (
+              <div className="problema">
+                ⏸ Subida a Dropi detenida. {p.dropi_en_pausa} Revisa el chat, corrige los datos si hace falta y toca
+                “Subir a Dropi” o “Todo bien, que siga sola”.
+              </div>
+            )}
+            {!p.dropi_en_pausa && p.estado === "confirmado" && !enDropi && p.confirmado_en && subeSola.has(p.tienda_dominio) && (
+              <div className="espera">
+                {minutosParaSubir(p.confirmado_en, ahora) > 0
+                  ? `⏳ Se sube a Dropi sola en ${minutosParaSubir(p.confirmado_en, ahora)} min.`
+                  : "⏳ Subiéndose a Dropi en el próximo minuto."}
+              </div>
+            )}
             {enDropi && <div className="listo">✓ En Dropi con el pedido N.º {p.dropi_order_id}</div>}
 
             {conectada && !enDropi && sinVincular.map((i) => (
@@ -130,6 +159,12 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
                     <button type="submit" className="principal">
                       {p.estado === "error" ? "Reintentar subir a Dropi" : "Subir a Dropi 🚚"}
                     </button>
+                  </form>
+                )}
+                {p.estado === "confirmado" && !enDropi && p.dropi_en_pausa && subeSola.has(p.tienda_dominio) && (
+                  <form action={quitarPausaDropi}>
+                    <input type="hidden" name="id" value={p.id} />
+                    <button type="submit">Todo bien, que siga sola</button>
                   </form>
                 )}
                 {p.estado === "confirmado" && !enDropi && (

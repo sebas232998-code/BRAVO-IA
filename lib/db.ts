@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Pedido } from "./tipos";
+import type { Pedido, Tienda } from "./tipos";
 import type { VinculoDropi } from "./dropi";
 import type { ConfigWhatsApp } from "./whatsapp";
 
@@ -209,4 +209,79 @@ export async function mensajesDePedidos(ids: string[]): Promise<Record<string, M
   const salida: Record<string, MensajeGuardado[]> = {};
   for (const m of (data ?? []) as MensajeGuardado[]) (salida[m.pedido_id!] ??= []).push(m);
   return salida;
+}
+
+// ---------- Piloto automático ----------
+
+export async function tiendasConInterruptores(): Promise<Tienda[]> {
+  const { data, error } = await db()
+    .from("tiendas")
+    .select("dominio, nombre, auto_confirmacion, auto_dropi, auto_desde")
+    .order("nombre");
+  if (error) return []; // si aún no se corrió la migración 004
+  return (data ?? []) as Tienda[];
+}
+
+export async function guardarInterruptores(
+  dominio: string,
+  cambios: Partial<Pick<Tienda, "auto_confirmacion" | "auto_dropi" | "auto_desde">>,
+) {
+  const { error } = await db().from("tiendas").update(cambios).eq("dominio", dominio);
+  if (error) throw error;
+}
+
+// Pedidos de la tienda que esperan su mensaje de confirmación.
+export async function pedidosSinConfirmacion(tienda: string, desde: string | null): Promise<Pedido[]> {
+  let q = db()
+    .from("pedidos")
+    .select("*")
+    .eq("tienda_dominio", tienda)
+    .eq("estado", "por_confirmar")
+    .is("confirmacion_enviada_en", null)
+    .not("telefono", "is", null)
+    .order("recibido_en", { ascending: true })
+    .limit(20);
+  if (desde) q = q.gte("recibido_en", desde);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as Pedido[];
+}
+
+// Pedidos confirmados de la tienda que todavía no están en Dropi.
+export async function confirmadosSinSubir(tienda: string): Promise<Pedido[]> {
+  const { data, error } = await db()
+    .from("pedidos")
+    .select("*")
+    .eq("tienda_dominio", tienda)
+    .eq("estado", "confirmado")
+    .is("dropi_order_id", null)
+    .is("dropi_en_pausa", null)
+    .not("confirmado_en", "is", null)
+    .order("confirmado_en", { ascending: true })
+    .limit(20);
+  if (error) throw error;
+  return (data ?? []) as Pedido[];
+}
+
+// Marca que la confirmación ya salió, para que dos vueltas del reloj no la manden dos veces.
+// Devuelve false si otra vuelta ya la apartó.
+export async function apartarConfirmacion(id: string): Promise<boolean> {
+  const { data, error } = await db()
+    .from("pedidos")
+    .update({ confirmacion_enviada_en: new Date().toISOString() })
+    .eq("id", id)
+    .is("confirmacion_enviada_en", null)
+    .select("id");
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+export async function registrarLatido(nombre: string, detalle: unknown) {
+  await db().from("latidos").upsert({ nombre, ultima_vez: new Date().toISOString(), detalle });
+}
+
+export async function ultimoLatido(nombre: string): Promise<{ ultima_vez: string; detalle: unknown } | null> {
+  const { data, error } = await db().from("latidos").select("ultima_vez, detalle").eq("nombre", nombre).maybeSingle();
+  if (error) return null;
+  return data;
 }
