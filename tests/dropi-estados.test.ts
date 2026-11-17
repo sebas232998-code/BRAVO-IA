@@ -74,3 +74,22 @@ describe("estado bonito", () => {
     expect(estadoBonito("DEVOLUCION")).toBe("Devolución");
   });
 });
+
+import { tasasOperacion } from "../lib/dropi-estados";
+describe("tasas por el día en que terminó el pedido", () => {
+  it("un pedido de octubre devuelto en noviembre cuenta en noviembre", () => {
+    const desde = new Date("2026-11-01T05:00:00Z");
+    const hasta = new Date("2026-12-01T05:00:00Z");
+    const t = tasasOperacion(
+      [
+        o("DEVOLUCION", { creado_en: "2026-10-12T15:00:00Z", actualizado_en: "2026-11-05T15:00:00Z" }),
+        o("ENTREGADO", { creado_en: "2026-11-07T15:00:00Z", actualizado_en: "2026-11-14T15:00:00Z" }),
+        o("ENTREGADO", { creado_en: "2026-10-10T15:00:00Z", actualizado_en: "2026-10-20T15:00:00Z" }), // terminó en octubre: no cuenta
+        o("EN REPARTO", { creado_en: "2026-11-10T15:00:00Z" }),
+      ],
+      desde,
+      hasta,
+    );
+    expect(t).toMatchObject({ entregados: 1, devueltos: 1, enCamino: 1, despachados: 3, entrega: 50 });
+  });
+});

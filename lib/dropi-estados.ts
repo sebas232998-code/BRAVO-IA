@@ -198,3 +198,33 @@ export function estadoBonito(estado: string): string {
   const t = estado.replace(/_/g, " ").toLowerCase().replace(/guia/g, "guía").replace(/devolucion/g, "devolución").replace(/transito/g, "tránsito").replace(/confirmacion/g, "confirmación");
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
+
+// El día en que el pedido terminó (se entregó o se devolvió). Dropi no manda esa fecha aparte:
+// se usa la última actualización.
+export const fechaFin = (o: Pick<OrdenDropiLeida, "actualizado_en" | "creado_en">) => o.actualizado_en ?? o.creado_en;
+
+const entre = (f: string, desde: Date, hasta: Date) => new Date(f) >= desde && new Date(f) < hasta;
+
+// Tasas de la operación en unas fechas:
+// - entregados, devueltos, tasa de entrega y de rescate: por el día en que TERMINARON (si un pedido de octubre
+//   se devolvió en noviembre, cuenta en noviembre);
+// - en camino, novedades abiertas y tasa de novedad: de los pedidos que ENTRARON en esas fechas.
+export function tasasOperacion(todas: OrdenDropiLeida[], desde: Date, hasta: Date): TasasDropi {
+  const creados = todas.filter((o) => entre(o.creado_en, desde, hasta));
+  const terminados = todas.filter((o) => ["entregado", "devuelto"].includes(etapa(o.estado)) && entre(fechaFin(o), desde, hasta));
+  const base = tasasDropi(creados);
+  const t = tasasDropi(terminados);
+  return {
+    ...base,
+    entregados: t.entregados,
+    devueltos: t.devueltos,
+    despachados: t.entregados + t.devueltos + base.enCamino,
+    entrega: t.entrega,
+    rescate: t.rescate,
+    fletePromedio: t.fletePromedio,
+  };
+}
+
+// Los que terminaron en esas fechas (para "¿Dónde se pierden?").
+export const terminadosEntre = (todas: OrdenDropiLeida[], desde: Date, hasta: Date) =>
+  todas.filter((o) => ["entregado", "devuelto"].includes(etapa(o.estado)) && entre(fechaFin(o), desde, hasta));

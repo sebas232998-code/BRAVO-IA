@@ -1,5 +1,5 @@
 // Leyendas: semanas (lunes a domingo, hora de Colombia) cerradas con tasa de entrega de 90 % o más.
-import { etapa, type OrdenDropiLeida } from "./dropi-estados";
+import { etapa, fechaFin, type OrdenDropiLeida } from "./dropi-estados";
 
 export const TASA_LEYENDA = 90;
 export const MINIMO_TERMINADOS = 5; // con menos pedidos no cuenta (sería suerte)
@@ -29,7 +29,7 @@ export function semanas(ordenes: OrdenDropiLeida[], ahora = new Date()): Semana[
     if (o.es_prueba) continue;
     const e = etapa(o.estado);
     if (e !== "entregado" && e !== "devuelto") continue;
-    const s = inicioSemana(new Date(o.creado_en));
+    const s = inicioSemana(new Date(fechaFin(o))); // la semana en que terminó
     if (s >= actual) continue;
     const g = grupos.get(s) ?? { entregados: 0, devueltos: 0 };
     if (e === "entregado") g.entregados++;

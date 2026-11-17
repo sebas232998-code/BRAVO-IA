@@ -8,7 +8,7 @@ import {
   tiendasConInterruptores,
   ultimoLatido,
 } from "@/lib/db";
-import { porGrupo, tasasDropi, type OrdenDropiLeida } from "@/lib/dropi-estados";
+import { porGrupo, tasasOperacion, terminadosEntre, type OrdenDropiLeida } from "@/lib/dropi-estados";
 import { PEDIDOS_EJEMPLO } from "@/lib/ejemplo";
 import { formatoPesos } from "@/lib/mensajes";
 import { calcularMetricas, comparacion, consejoConfirmacion, consejoEntrega, rango } from "@/lib/metricas";
@@ -87,11 +87,12 @@ export default async function Panel({
 
   // Estados reales de Dropi (se sincronizan solos cada 30 minutos).
   const latidoDropi = conectada ? await ultimoLatido("dropi") : null;
-  const conPruebas = conectada && !ejemplo ? await ordenesDropiDesde(r.anterior.desde) : [];
+  // Se traen desde 90 días antes, porque un pedido que entró antes puede haber terminado en estas fechas.
+  const conPruebas = conectada && !ejemplo ? await ordenesDropiDesde(new Date(r.anterior.desde.getTime() - 90 * 86_400_000)) : [];
   // Los pedidos de prueba del vendedor no cuentan.
   const todasDropi = conPruebas.filter((o) => !o.es_prueba);
   const enRango = (o: OrdenDropiLeida, d: Date, h: Date) => new Date(o.creado_en) >= d && new Date(o.creado_en) < h;
-  const delRango = todasDropi.filter((o) => enRango(o, r.desde, r.hasta));
+  const delRango = todasDropi.filter((o) => enRango(o, r.desde, r.hasta) || terminadosEntre([o], r.desde, r.hasta).length > 0);
   // Solo las tiendas que tienen pedidos en estas fechas (las viejas no aparecen).
   const tiendasDropi = [...new Set(delRango.map((o) => o.tienda).filter(Boolean) as string[])].sort();
   const porDefecto =
@@ -102,8 +103,8 @@ export default async function Panel({
 
   let enCamino = 0;
   if (conDropi) {
-    const td = tasasDropi(filtrar(delRango));
-    const ta = tasasDropi(filtrar(todasDropi.filter((o) => enRango(o, r.anterior.desde, r.anterior.hasta))));
+    const td = tasasOperacion(filtrar(todasDropi), r.desde, r.hasta);
+    const ta = tasasOperacion(filtrar(todasDropi), r.anterior.desde, r.anterior.hasta);
     Object.assign(m, { despachados: td.despachados, entregados: td.entregados, devueltos: td.devueltos, conNovedad: td.conNovedad });
     enCamino = td.enCamino;
     m.tasas = { ...m.tasas, entrega: td.entrega, novedad: td.novedad, rescate: td.rescate, realVenta: td.realVenta };
@@ -134,7 +135,8 @@ export default async function Panel({
   const compConfirmacion = comparacion(m.tasas.confirmacion, antes.tasas.confirmacion, r.anterior.nombre);
   const consejoE = consejoEntrega(entrega, minimo, m.conNovedad);
   const consejoC = consejoConfirmacion(m.tasas.confirmacion, m.porConfirmar, seguimientoPrendido);
-  const peores = (campo: "ciudad" | "transportadora" | "producto") => porGrupo(filtrar(delRango), campo).slice(0, 4);
+  const peores = (campo: "ciudad" | "transportadora" | "producto") =>
+    porGrupo(terminadosEntre(filtrar(todasDropi), r.desde, r.hasta), campo).slice(0, 4);
   const hoy = new Date(Date.now() - 5 * 3_600_000).toISOString().slice(0, 10);
 
   // Leyendas: semanas cerradas con 90 % o más (de la tienda escogida).
@@ -211,7 +213,7 @@ export default async function Panel({
               <div className="pedido-meta">
                 {entrega === null
                   ? SIN_DATOS
-                  : `De cada 100 pedidos que terminan su recorrido, ${entrega} se entregan (${m.entregados} entregados, ${m.devueltos} devueltos).`}
+                  : `De los pedidos que terminaron en estas fechas, ${m.entregados} se entregaron y ${m.devueltos} se devolvieron.`}
               </div>
               {compEntrega && <Comparacion {...compEntrega} />}
               {aviso && <div className="problema">{aviso}</div>}
@@ -287,7 +289,7 @@ export default async function Panel({
           {conDropi && (
             <section className="pedido">
               <div className="pedido-nombre">¿Dónde se pierden?</div>
-              <p className="pedido-meta">Tasa de entrega en estas fechas, de peor a mejor (con 3 pedidos terminados o más).</p>
+              <p className="pedido-meta">Pedidos que terminaron en estas fechas, de peor a mejor (con 3 o más).</p>
               {(["transportadora", "ciudad", "producto"] as const).map((campo) => {
                 const lista = peores(campo);
                 if (lista.length === 0) return null;
